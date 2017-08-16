@@ -19,7 +19,10 @@ OBJS         = libbenly_cmd.so            \
 
 DEFCFLAGS    =	-fPIC			  \
 		-DLOCALE=\"$(LOCALE)\"    \
+		-DWITH_REGEX              \
+		-DWITH_GLIB               \
 	    	$(LIBS)
+
 DEFLDFLAGS   = -shared			  \
 		-Wl,-soname=$@.$(VERSION) \
 		$(LIBS)	
