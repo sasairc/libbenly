@@ -11,6 +11,7 @@ RM	   := rm
 CFLAGS	   := -O2 -g
 LDFLAGS    :=
 CMDLINE    := 0
+export
 
 all install-lib install-header clean:
 	@$(MAKE) -C ./src	$@
