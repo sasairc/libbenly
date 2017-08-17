@@ -22,14 +22,15 @@ DEFLDFLAGS   = -shared			  \
 
 all: $(OBJS)
 # with glib-2.0
-ifneq ($(WITH_GLIB), 0)
+ifeq ($(WITH_GLIB), 1)
 DEFCFLAGS  += -DWITH_GLIB `pkg-config --cflags --libs glib-2.0`
 DEFLDFLAGS += `pkg-config --cflags --libs glib-2.0` 
 endif
-# wigh regex
-ifneq ($(WITH_REGEX), 0)
+# with POSIX regex.h
+ifeq ($(WITH_REGEX), 1)
 DEFCFLAGS += -DWITH_REGEX
 endif
+#export
 
 libbenly_cmd.so: cmd.c cmd.h
 ifeq ($(CMDLINE), 0)
