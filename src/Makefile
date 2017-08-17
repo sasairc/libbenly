@@ -7,9 +7,7 @@ PATCHLEVEL   = 0
 SUBLEVEL     = 0
 EXTRAVERSION =
 VERSIONSTR   = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)
-LIBS         = `pkg-config --cflags --libs glib-2.0` 
 LOCALE       =
-
 OBJS         = libbenly_cmd.so            \
 	       libbenly_env.so            \
 	       libbenly_file.so           \
@@ -18,16 +16,20 @@ OBJS         = libbenly_cmd.so            \
 	       libbenly_string.so
 
 DEFCFLAGS    =	-fPIC			  \
-		-DLOCALE=\"$(LOCALE)\"    \
-		-DWITH_REGEX              \
-		-DWITH_GLIB               \
-	    	$(LIBS)
-
+		-DLOCALE=\"$(LOCALE)\"
 DEFLDFLAGS   = -shared			  \
-		-Wl,-soname=$@.$(VERSION) \
-		$(LIBS)	
+		-Wl,-soname=$@.$(VERSION)
 
 all: $(OBJS)
+# with glib-2.0
+ifneq ($(WITH_GLIB), 0)
+DEFCFLAGS  += -DWITH_GLIB `pkg-config --cflags --libs glib-2.0`
+DEFLDFLAGS += `pkg-config --cflags --libs glib-2.0` 
+endif
+# wigh regex
+ifneq ($(WITH_REGEX), 0)
+DEFCFLAGS += -DWITH_REGEX
+endif
 
 libbenly_cmd.so: cmd.c cmd.h
 ifeq ($(CMDLINE), 0)

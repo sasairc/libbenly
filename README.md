@@ -3,15 +3,17 @@ libbenly
 
 [![license](https://img.shields.io/badge/License-WTFPL2-blue.svg?style=flat)](http://www.wtfpl.net/txt/copying/)
 
-べんりライブラリの詰め合わせ。ギフトにも最適です。
+libbenly (便利) - less a misc than a poor library.
 
 ## Install
 
 ```shellsession
 % make
+% make WITH_GLIB=1    # build with libglib-2 support
+% make WITH_REGEX=1   # build with POSIX Regular expression matching types (regex.h)
+% make CMDLINE=1      # verbose mode
 # make install
 ```
-
 
 ## Usage
 

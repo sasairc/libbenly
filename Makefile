@@ -11,6 +11,8 @@ RM	   := rm
 CFLAGS	   := -O2 -g
 LDFLAGS    :=
 CMDLINE    := 0
+WITH_GLIB  := 0
+WITH_REGEX := 0
 export
 
 all install-lib install-header clean:
