@@ -1,5 +1,5 @@
 /*
- * libbenly
+ * libbenly (便利) - less a misc than a poor library.
  *
  * string.h
  *

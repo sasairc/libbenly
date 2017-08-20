@@ -51,90 +51,9 @@ int main(void)
 
 ## Function List
 
-### env.h
-
-```c
-#include <benly/env.h>
-
-typedef struct ENV_T {
-    int     envc;
-    char**  envs;
-} env_t;
-
-env_t* split_env(char* env);
-void release_env_t(env_t* env);
-```
-
-### file.h
-
-```c
-#include <benly/file.h>
-
-int check_file_type(char* filename);
-int count_file_lines(FILE* fp);
-int read_file(int lines, size_t length, char** buf, FILE* fp);
-int p_count_file_lines(char** buf);
-int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp);
-int watch_fd(int fd, long timeout);
-
-```
-
-### memory.h
-
-```c
-#include <benly/memory.h>
-
-char** malloc2d(int x, int y);
-int init2d(char** buf, int x, int y);
-void free2d(char** buf, int y);
-```
-
-### signal.h
-
-```c
-#include <benly/signal.h>
-
-typedef struct SIGLIST_T {
-    int     sig;
-    void    (*func)(int sig);
-} siglist_t;
-
-/* This functions is required signal.c */
-int set_signal(int sig, void (*func)(int sig));
-int set_signal_siglist(siglist_t* siglist);
-void handl_zombie_proc(void);
-```
-
-### string.h
-
-```c
-#include <benly/string.h>
-
-int strrep(char* src, char* haystack, char* needle);
-char* strlion(int argnum, ...);
-int mbstrlen(char* src);
-int strunesc(char* src);
-int strmax(int val, char** src);
-int strlftonull(char* str);
-char** str_to_args(char* str);
-char* mbstrtok(char* str, char* delimiter);
-int trim(char* str);
-int strcmp_lite(const char* str1, const char* str2);
-
-#ifdef  WITH_REGEX
-#include <regex.h>
-#ifdef  WITH_GLIB
-int mbstrlen_with_regex(char* src, regex_t* reg);
-int strmax_with_regex(int val, char** src, regex_t* reg);
-/* WITH_GLIB */
-#endif
-/* WITH_REGEX */
-#endif
-```
-
 ### cmd.h
 
-```c
+```
 #include <benly/cmd.h>
 
 #define TCOM    1   /* command */
@@ -173,6 +92,81 @@ int mwait(void);
 void redirect(int oldfd, int newfd);
 void release_cmd_t(cmd_t* cmd);
 ```
+
+### env.h
+
+```c
+#include <benly/env.h>
+
+typedef struct ENV_T {
+    int     envc;
+    char**  envs;
+} env_t;
+
+int split_env(char* env, env_t** dest);
+void release_env_t(env_t* env);
+```
+
+### file.h
+
+```c
+#include <benly/file.h>
+
+int p_count_file_lines(char** buf);
+int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp);
+int watch_fd(int fd, long timeout);
+```
+
+### memory.h
+
+```c
+#include <benly/memory.h>
+
+void* smalloc(size_t size, const char* fmt, ...);
+void* srealloc(void* ptr, size_t size, const char* fmt, ...);
+void free2d(char** buf, int y);
+```
+
+### signal.h
+
+```c
+#include <benly/signal.h>
+
+typedef struct SIGLIST_T {
+    int     sig;
+    void    (*func)(int sig);
+} siglist_t;
+
+int set_signal(int sig, void (*func)(int sig));
+int set_signal_siglist(siglist_t* siglist);
+void handl_zombie_proc(void);
+```
+
+### string.h
+
+```c
+#include <benly/string.h>
+
+int strisdigit(char* str);
+int strrep(char* src, char* haystack, char* needle);
+char* strlion(int argnum, ...);
+int mbstrlen(char* src);
+int strunesc(char* src);
+int strmax(int val, char** src);
+int strlftonull(char* str);
+char** str_to_args(char* str);
+char* mbstrtok(char* str, char* delimiter);
+int trim(char* str);
+int strcmp_lite(const char* str1, const char* str2);
+
+#ifdef  WITH_REGEX
+#include <regex.h>
+int mbstrlen_with_regex(char* src, regex_t* reg);
+int strmax_with_regex(int val, char** src, regex_t* reg);
+/* WITH_REGEX */
+#endif
+```
+
 
 ## License
 
