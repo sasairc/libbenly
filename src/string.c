@@ -233,6 +233,7 @@ int mbstrlen(char* src)
 
     return len;
 }
+/* WITH_GLIB */
 #endif
 
 int strunesc(char* src)
@@ -393,6 +394,7 @@ char** str_to_args(char* str)
     fprintf(stderr, "DEBUG: str_to_args(): args(%p)\n", args);
     for (i = 0; i <= elmc; i++)
         fprintf(stderr, "DEBUG: str_to_args(): args[%d](%p) = %s\n", i, args[i], args[i]);
+/* DEBUG */
 #endif
 
     return args;
@@ -479,7 +481,6 @@ int strcmp_lite(const char* str1, const char* str2)
     return 1;
 }
 
-#ifdef  WITH_GLIB
 #ifdef  WITH_REGEX
 int mbstrlen_with_regex(char* src, regex_t* reg)
 {
@@ -488,7 +489,10 @@ int mbstrlen_with_regex(char* src, regex_t* reg)
 
     char*       p       = src;
 
+#ifdef  WITH_GLIB
     gunichar*   cpoints;
+/* WITH_GLIB */
+#endif
 
     regmatch_t  match;
 
@@ -499,12 +503,16 @@ int mbstrlen_with_regex(char* src, regex_t* reg)
         if ((ch = mblen(p, MB_CUR_MAX)) < 0)
             return 0;
 
+#ifdef  WITH_GLIB
+        /*
+         * true : multi byte
+         * false: ascii
+         */
         if (ch > 1) {
             /* get unicode code point */
             cpoints = g_utf8_to_ucs4_fast(p, sizeof(*p), NULL);
-
             /*
-             * multi byte
+             * # multi byte
              * true : hankaku kana
              * false: other
              */
@@ -514,12 +522,24 @@ int mbstrlen_with_regex(char* src, regex_t* reg)
             } else {
                 len += 2;
             }
-
             g_free(cpoints);
         } else {
-            len++;    /* ascii */
+            len++;
         }
-        p += ch;      /* seek offset */
+#else
+        /*
+         * true : multi byte
+         * false: ascii
+         */
+        if (ch > 1) {
+            len += 2;
+        } else {
+            len++;
+        }
+/* WITH_GLIB */
+#endif
+        /* seek offset */
+        p += ch;
     }
 
     /* regex match */
@@ -551,6 +571,4 @@ int strmax_with_regex(int val, char** src, regex_t* reg)
     return max;
 }
 /* WITH_REGEX */
-#endif
-/* WITH_GLIB */
 #endif

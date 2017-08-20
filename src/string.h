@@ -31,11 +31,8 @@ extern int strcmp_lite(const char* str1, const char* str2);
 
 #ifdef  WITH_REGEX
 #include <regex.h>
-#ifdef  WITH_GLIB
 extern int mbstrlen_with_regex(char* src, regex_t* reg);
 extern int strmax_with_regex(int val, char** src, regex_t* reg);
-/* WITH_GLIB */
-#endif
 /* WITH_REGEX */
 #endif
 #ifdef  __cplusplus
