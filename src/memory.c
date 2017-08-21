@@ -20,7 +20,7 @@
 void* smalloc(size_t size, const char* fmt, ...)
 {
     if (size <= 0)
-        NULL;
+        return NULL;
 
     void*   buf = NULL;
 
