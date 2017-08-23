@@ -30,7 +30,6 @@ endif
 ifeq ($(WITH_REGEX), 1)
 DEFCFLAGS += -DWITH_REGEX
 endif
-#export
 
 libbenly_cmd.so: cmd.c cmd.h
 ifeq ($(CMDLINE), 0)
