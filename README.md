@@ -1,7 +1,10 @@
 libbenly
 ===
 
-[![license](https://img.shields.io/badge/License-WTFPL2-blue.svg?style=flat)](http://www.wtfpl.net/txt/copying/)
+[![version](http://img.shields.io/github/tag/sasairc/libbenly.svg?style=flat&label=version)](https://github.com/sasairc/libbenly/releases)
+[![license](https://img.shields.io/badge/License-WTFPL2-blue.svg?style=flat)](https://raw.githubusercontent.com/sasairc/libbenly/master/LICENSE)
+[![language](https://img.shields.io/badge/language-C%2FC%2B%2B-lightgrey.svg)]()
+[![build](https://img.shields.io/travis/sasairc/libbenly.svg?style=flat)](https://travis-ci.org/sasairc/libbenly)
 
 libbenly (便利) - less a misc than a poor library.
 
@@ -10,8 +13,11 @@ libbenly (便利) - less a misc than a poor library.
 ```shellsession
 % make
 % make WITH_GLIB=1    # build with libglib-2 support
+% make WITH_GLIB=0    # build without libglib-2 support
 % make WITH_REGEX=1   # build with POSIX Regular expression matching types (regex.h)
+% make WITH_REGEX=0   # build without POSIX Regular expression matching types (regex.h)
 % make CMDLINE=1      # verbose mode
+% make CMDLINE=0      # silent mode
 # make install
 ```
 
@@ -53,7 +59,7 @@ int main(void)
 
 ### cmd.h
 
-```
+```c
 #include <benly/cmd.h>
 
 #define TCOM    1   /* command */
@@ -114,6 +120,7 @@ void release_env_t(env_t* env);
 
 int p_count_file_lines(char** buf);
 int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp);
+int file_is_binary(FILE* fp);
 int watch_fd(int fd, long timeout);
 ```
 

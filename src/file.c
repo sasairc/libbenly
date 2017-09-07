@@ -170,6 +170,18 @@ ERR:
     return status;
 }
 
+int file_is_binary(FILE* fp)
+{
+    int c   = 0;
+
+    while ((c = fgetc(fp)) != EOF) {
+        if (c <= 0x08)
+            return c;
+    }
+
+    return 0;
+}
+
 int watch_fd(int fd, long timeout)
 {
     fd_set  fdset;
