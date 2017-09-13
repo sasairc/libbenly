@@ -34,7 +34,7 @@ DEFLDFLAGS   = -shared                   \
 # for Linux
 endif
 ifeq ($(shell uname), Darwin)
-DEFLDFLAGS   = -dynamic -dynamiclib -undefined suppress -flat_namespace \
+DEFLDFLAGS   = -dynamiclib -undefined suppress -flat_namespace \
                -install_name $@ -current_version $(VERSIONSTR) -compatibility_version $(VERSION).$(PATCHLEVEL)
 # for Darwin
 endif
