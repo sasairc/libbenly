@@ -1,12 +1,19 @@
 language: c
+os:
+    - linux
+    - osx
 compiler:
     - gcc
     - clang
+addons:
+    apt:
+        packages:
+            - tree
 before_install:
-    - sudo apt-get update
-    - sudo apt-get install tree
+    - test "${TRAVIS_OS_NAME}" = "osx" && brew update
+    - test "${TRAVIS_OS_NAME}" = "osx" && brew install tree
 script:
-    - export CC="$CC" TEST_PREFIX="`pwd`/test_prefix"
+    - export CC="${CC}" TEST_PREFIX="`pwd`/test_prefix"
     - make CC="$CC" PREFIX="$TEST_PREFIX"
     - make CC="$CC" PREFIX="$TEST_PREFIX" install
     - tree "$TEST_PREFIX"
