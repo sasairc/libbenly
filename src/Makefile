@@ -8,30 +8,49 @@ SUBLEVEL     = 0
 EXTRAVERSION =
 VERSIONSTR   = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)
 LOCALE       =
-OBJS         = libbenly_cmd.so            \
-	       libbenly_env.so            \
-	       libbenly_file.so           \
-	       libbenly_memory.so	  \
-	       libbenly_signal.so         \
-	       libbenly_string.so
-
-DEFCFLAGS    =	-fPIC			  \
-		-DLOCALE=\"$(LOCALE)\"
-DEFLDFLAGS   = -shared			  \
-		-Wl,-soname=$@.$(VERSION)
-
-all: $(OBJS)
+ifeq ($(shell uname), Linux)
+SUFFIX       = so
+# for Linux
+endif
+ifeq ($(shell uname), Darwin)
+SUFFIX       = dylib
+# for Darwin
+endif
+ifndef SUFFIX
+SUFFIX       = so
+# for Other System
+endif
+OBJS         = libbenly_cmd.$(SUFFIX)    \
+               libbenly_env.$(SUFFIX)    \
+               libbenly_file.$(SUFFIX)   \
+               libbenly_memory.$(SUFFIX) \
+               libbenly_signal.$(SUFFIX) \
+               libbenly_string.$(SUFFIX)
+DEFCFLAGS    = -fPIC                     \
+               -DLOCALE=\"$(LOCALE)\"
+ifeq ($(shell uname), Linux)
+DEFLDFLAGS   = -shared                   \
+               -Wl,-soname=$@.$(VERSION)
+# for Linux
+endif
+ifeq ($(shell uname), Darwin)
+DEFLDFLAGS   = -dynamiclib -undefined suppress -flat_namespace \
+               -install_name $@ -current_version $(VERSIONSTR) -compatibility_version $(VERSION).$(PATCHLEVEL)
+# for Darwin
+endif
 # with glib-2.0
 ifeq ($(WITH_GLIB), 1)
-DEFCFLAGS  += -DWITH_GLIB `pkg-config --cflags --libs glib-2.0`
-DEFLDFLAGS += `pkg-config --cflags --libs glib-2.0` 
+DEFCFLAGS    += -DWITH_GLIB `pkg-config --cflags --libs glib-2.0`
+DEFLDFLAGS   += `pkg-config --cflags --libs glib-2.0` 
 endif
 # with POSIX regex.h
 ifeq ($(WITH_REGEX), 1)
-DEFCFLAGS += -DWITH_REGEX
+DEFCFLAGS    += -DWITH_REGEX
 endif
 
-libbenly_cmd.so: cmd.c cmd.h
+all: $(OBJS)
+
+libbenly_cmd.$(SUFFIX): cmd.c cmd.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      cmd.o"
 	@$(CC) $(CFLAGS) -c $< -o cmd.o $(DEFCFLAGS)
@@ -42,7 +61,7 @@ else
 	$(CC) $(LDFLAGS) cmd.o -o $@ $(DEFLDFLAGS)
 endif
 
-libbenly_env.so: env.c env.h
+libbenly_env.$(SUFFIX): env.c env.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      env.o"
 	@$(CC) $(CFLAGS) -c $< -o env.o $(DEFCFLAGS)
@@ -53,7 +72,7 @@ else
 	$(CC) $(LDFLAGS) env.o -o $@ $(DEFLDFLAGS)
 endif
 
-libbenly_file.so: file.c file.h
+libbenly_file.$(SUFFIX): file.c file.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      file.o"
 	@$(CC) $(CFLAGS) -c $< -o file.o $(DEFCFLAGS)
@@ -64,7 +83,7 @@ else
 	$(CC) $(LDFLAGS) file.o -o $@ $(DEFLDFLAGS)
 endif
 
-libbenly_memory.so: memory.c memory.h
+libbenly_memory.$(SUFFIX): memory.c memory.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      memory.o"
 	@$(CC) $(CFLAGS) -c $< -o memory.o $(DEFCFLAGS)
@@ -75,7 +94,7 @@ else
 	$(CC) $(LDFLAGS) memory.o -o $@ $(DEFLDFLAGS)
 endif
 
-libbenly_signal.so: signal.c signal.h
+libbenly_signal.$(SUFFIX): signal.c signal.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      signal.o"
 	@$(CC) $(CFLAGS) -c $< -o signal.o $(DEFCFLAGS)
@@ -86,7 +105,7 @@ else
 	$(CC) $(LDFLAGS) signal.o -o $@ $(DEFLDFLAGS)
 endif
 
-libbenly_string.so: string.c string.h
+libbenly_string.$(SUFFIX): string.c string.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      string.o"
 	@$(CC) $(CFLAGS) -c $< -o string.o $(DEFCFLAGS)
@@ -99,24 +118,33 @@ endif
 
 install-lib: $(OBJS)
 	install -pd $(LIBDIR)
-	install -pm 755 libbenly_cmd.so $(LIBDIR)/libbenly_cmd.so.$(VERSIONSTR)
-	ln -sf $(LIBDIR)/libbenly_cmd.so.$(VERSIONSTR) $(LIBDIR)/libbenly_cmd.so.$(VERSION)
-	ln -sf $(LIBDIR)/libbenly_cmd.so.$(VERSIONSTR) $(LIBDIR)/libbenly_cmd.so
-	install -pm 755 libbenly_env.so $(LIBDIR)/libbenly_env.so.$(VERSIONSTR)
-	ln -sf $(LIBDIR)/libbenly_env.so.$(VERSIONSTR) $(LIBDIR)/libbenly_env.so.$(VERSION)
-	ln -sf $(LIBDIR)/libbenly_env.so.$(VERSIONSTR) $(LIBDIR)/libbenly_env.so
-	install -pm 755 libbenly_file.so $(LIBDIR)/libbenly_file.so.$(VERSIONSTR)
-	ln -sf $(LIBDIR)/libbenly_file.so.$(VERSIONSTR) $(LIBDIR)/libbenly_file.so.$(VERSION)
-	ln -sf $(LIBDIR)/libbenly_file.so.$(VERSIONSTR) $(LIBDIR)/libbenly_file.so
-	install -pm 755 libbenly_memory.so $(LIBDIR)/libbenly_memory.so.$(VERSIONSTR)
-	ln -sf $(LIBDIR)/libbenly_memory.so.$(VERSIONSTR) $(LIBDIR)/libbenly_memory.so.$(VERSION)
-	ln -sf $(LIBDIR)/libbenly_memory.so.$(VERSIONSTR) $(LIBDIR)/libbenly_memory.so
-	install -pm 755 libbenly_signal.so $(LIBDIR)/libbenly_signal.so.$(VERSIONSTR)
-	ln -sf $(LIBDIR)/libbenly_signal.so.$(VERSIONSTR) $(LIBDIR)/libbenly_signal.so.$(VERSION)
-	ln -sf $(LIBDIR)/libbenly_signal.so.$(VERSIONSTR) $(LIBDIR)/libbenly_signal.so
-	install -pm 755 libbenly_string.so $(LIBDIR)/libbenly_string.so.$(VERSIONSTR)
-	ln -sf $(LIBDIR)/libbenly_string.so.$(VERSIONSTR) $(LIBDIR)/libbenly_string.so.$(VERSION)
-	ln -sf $(LIBDIR)/libbenly_string.so.$(VERSIONSTR) $(LIBDIR)/libbenly_string.so
+	install -pm 755 libbenly_cmd.$(SUFFIX) $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_cmd.$(SUFFIX)
+	install -pm 755 libbenly_env.$(SUFFIX) $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_env.$(SUFFIX)
+	install -pm 755 libbenly_file.$(SUFFIX) $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_file.$(SUFFIX)
+	install -pm 755 libbenly_memory.$(SUFFIX) $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_memory.$(SUFFIX)
+	install -pm 755 libbenly_signal.$(SUFFIX) $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_signal.$(SUFFIX)
+	install -pm 755 libbenly_string.$(SUFFIX) $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX)
+ifeq ($(shell uname), Darwin)
+	install_name_tool -change "libbenly_cmd.dylib" "$(LIBDIR)/libbenly_cmd.dylib" $(LIBDIR)/libbenly_cmd.dylib
+	install_name_tool -change "libbenly_env.dylib" "$(LIBDIR)/libbenly_env.dylib" $(LIBDIR)/libbenly_env.dylib
+	install_name_tool -change "libbenly_file.dylib" "$(LIBDIR)/libbenly_file.dylib" $(LIBDIR)/libbenly_file.dylib
+	install_name_tool -change "libbenly_memory.dylib" "$(LIBDIR)/libbenly_memory.dylib" $(LIBDIR)/libbenly_memory.dylib
+	install_name_tool -change "libbenly_signal.dylib" "$(LIBDIR)/libbenly_signal.dylib" $(LIBDIR)/libbenly_signal.dylib
+	install_name_tool -change "libbenly_string.dylib" "$(LIBDIR)/libbenly_string.dylib" $(LIBDIR)/libbenly_string.dylib
+# for Darwin
+endif
 
 install-header:
 	install -pd $(INCLUDEDIR)/benly
