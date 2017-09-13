@@ -10,8 +10,8 @@ addons:
         packages:
             - tree
 before_install:
-    - test "${TRAVIS_OS_NAME}" = "osx" && brew update
-    - test "${TRAVIS_OS_NAME}" = "osx" && brew install tree
+    - test "${TRAVIS_OS_NAME}" = "osx" && brew update || true
+    - test "${TRAVIS_OS_NAME}" = "osx" && brew install tree || true
 script:
     - export CC="${CC}" TEST_PREFIX="`pwd`/test_prefix"
     - make CC="$CC" PREFIX="$TEST_PREFIX"
