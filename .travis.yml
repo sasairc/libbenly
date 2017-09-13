@@ -9,14 +9,20 @@ addons:
     apt:
         packages:
             - tree
+            - pkg-config
+            - libglib2.0-0
+            - libglib2.0-dev
 before_install:
     - export TEST_PREFIX="$(pwd)/test_prefix"
     - test "${TRAVIS_OS_NAME}" = "osx" && brew update; true
-    - test "${TRAVIS_OS_NAME}" = "osx" && brew install tree; true
+    - test "${TRAVIS_OS_NAME}" = "osx" && brew install tree pkg-config glib; true
     - test "${TRAVIS_OS_NAME}" = "osx" && test "${CC}" = "gcc" && export CC="gcc-4.9"; true
 script:
     - make CC="${CC}" PREFIX="${TEST_PREFIX}"
-    - make CC="${CC}" PREFIX="${TEST_PREFIX}" install
+    - make clean
+    - make CC="${CC}" PREFIX="${TEST_PREFIX}" WITH_GLIB=1
+    - make clean
+    - make CC="${CC}" PREFIX="${TEST_PREFIX}" WITH_GLIB=1 WITH_REGEX=1 install
+    - make clean
     - tree "${TEST_PREFIX}"
     - rm -r "${TEST_PREFIX}"
-    - make clean
