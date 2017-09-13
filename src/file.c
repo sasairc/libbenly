@@ -22,175 +22,173 @@
 
 int p_count_file_lines(char** buf)
 {
-	if (buf == NULL)
-		return -1;
+    if (buf == NULL)
+        return -1;
 
-	int		i	= 0;
+    int     i   = 0;
 
-	while (*(buf + i) != NULL)
-		i++;
+    while (*(buf + i) != NULL)
+        i++;
 
-	return i;
+    return i;
 }
 
 int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp)
 {
-	if (t_lines <= 0 || t_length <= 0 || fp == NULL)
-		return -1;
+    if (t_lines <= 0 || t_length <= 0 || fp == NULL)
+        return -1;
 
-	int		c		= 0,
-			status	= 0;
+    int     c       = 0,
+            status  = 0;
 
-	size_t	x		= 0,
-			y		= 0,
-			lines	= t_lines,
-			length	= t_length,
-			tmplen	= 0;
+    size_t  x       = 0,
+            y       = 0,
+            lines   = t_lines,
+            length  = t_length,
+            tmplen  = 0;
 
-	char*	str		= NULL,
-		**	buf		= NULL;
+    char*   str     = NULL,
+        **  buf     = NULL;
 
-	if ((str = (char*)
-				smalloc(sizeof(char) * t_length, NULL)) == NULL)
-		return -1;
+    if ((str = (char*)
+                smalloc(sizeof(char) * t_length, NULL)) == NULL)
+        return -1;
 
-	if ((buf = (char**)
-				smalloc(sizeof(char*) * t_lines, NULL)) == NULL) {
-		status = -2; goto ERR;
-	}
+    if ((buf = (char**)
+                smalloc(sizeof(char*) * t_lines, NULL)) == NULL) {
+        status = -2; goto ERR;
+    }
 
-	while ((c = fgetc(fp)) != EOF) {
-		switch (c) {
-			case	'\n':
-				if (chomp > 0)
-					*(str + x) = '\0';
-				else
-					*(str + x) = c;
+    while ((c = fgetc(fp)) != EOF) {
+        switch (c) {
+            case    '\n':
+                if (chomp > 0)
+                    *(str + x) = '\0';
+                else
+                    *(str + x) = c;
 
-				tmplen = strlen(str);
-				/* reallocate array of Y coordinate */
-				if (y == (lines - 1)) {
-					lines += t_lines;
-					if ((buf = (char**)
-								srealloc(buf, sizeof(char*) * lines, NULL)) == NULL) {
-						status = -3; goto ERR;
-					}
-				}
-				/* allocate array for X coordinate */
-				if ((*(buf + y) = (char*)
-							smalloc(sizeof(char) * (tmplen + 1), NULL)) == NULL) {
-					status = -4; goto ERR;
-				}
+                tmplen = strlen(str);
+                /* reallocate array of Y coordinate */
+                if (y == (lines - 1)) {
+                    lines += t_lines;
+                    if ((buf = (char**)
+                                srealloc(buf, sizeof(char*) * lines, NULL)) == NULL) {
+                        status = -3; goto ERR;
+                    }
+                }
+                /* allocate array for X coordinate */
+                if ((*(buf + y) = (char*)
+                            smalloc(sizeof(char) * (tmplen + 1), NULL)) == NULL) {
+                    status = -4; goto ERR;
+                }
 
-				/* copy, str to buffer */
-				memcpy(*(buf + y), str, tmplen);
-				*(*(buf + y) + tmplen) = '\0';
-				/* initialize temporary buffer */
-				memset(str, '\0', length);
-				x = tmplen = 0;
-				y++;
-				break;
-			default:
-				/* reallocate temporary array */
-				if (x == (length - 1)) {
-					length += t_length;
-					if ((str = (char*)
-								srealloc(str, sizeof(char) * length, NULL)) == NULL) {
-						status = -5; goto ERR;
-					}
-				}
-				*(str + x) = c;
-				x++;
-				continue;
-		}
-	}
+                /* copy, str to buffer */
+                memcpy(*(buf + y), str, tmplen);
+                *(*(buf + y) + tmplen) = '\0';
+                /* initialize temporary buffer */
+                memset(str, '\0', length);
+                x = tmplen = 0;
+                y++;
+                break;
+            default:
+                /* reallocate temporary array */
+                if (x == (length - 1)) {
+                    length += t_length;
+                    if ((str = (char*)
+                                srealloc(str, sizeof(char) * length, NULL)) == NULL) {
+                        status = -5; goto ERR;
+                    }
+                }
+                *(str + x) = c;
+                x++;
+                continue;
+        }
+    }
 
-	/* \n -{data}- EOF */
-	if (x > 0) {
-		/* remove lf? */
-		if (chomp > 0)
-			*(str + x) = '\0';
-		else
-			*(str + x) = c;
+    /* \n -{data}- EOF */
+    if (x > 0) {
+        /* remove lf? */
+        if (chomp > 0)
+            *(str + x) = '\0';
+        else
+            *(str + x) = c;
 
-		tmplen = strlen(str);
-		/* reallocate array of Y coordinate */
-		if (y == (lines - 1)) {
-			lines += t_lines;
-			if ((buf = (char**)
-						srealloc(buf, sizeof(char*) * lines, NULL)) == NULL) {
-				status = -6; goto ERR;
-			}
-		}
-		/* allocate array for X coordinate */
-		if ((*(buf + y) = (char*)
-					smalloc(sizeof(char) * (tmplen + 1), NULL)) == NULL) {
-			status = -7; goto ERR;
-		}
+        tmplen = strlen(str);
+        /* reallocate array of Y coordinate */
+        if (y == (lines - 1)) {
+            lines += t_lines;
+            if ((buf = (char**)
+                        srealloc(buf, sizeof(char*) * lines, NULL)) == NULL) {
+                status = -6; goto ERR;
+            }
+        }
+        /* allocate array for X coordinate */
+        if ((*(buf + y) = (char*)
+                    smalloc(sizeof(char) * (tmplen + 1), NULL)) == NULL) {
+            status = -7; goto ERR;
+        }
 
-		/* copy, str to buffer */
-		memcpy(*(buf + y), str, tmplen);
-		*(*(buf + y) + tmplen - 1) = '\0';
-		y++;
-	}
+        /* copy, str to buffer */
+        memcpy(*(buf + y), str, tmplen);
+        *(*(buf + y) + tmplen - 1) = '\0';
+        y++;
+    }
 
-	/* no data */
-	if (x == 0 && y == 0) {
-		if (buf != NULL)
-			free(buf);
-		if (str != NULL)
-			free(str);
+    /* no data */
+    if (x == 0 && y == 0) {
+        if (buf != NULL)
+            free(buf);
+        if (str != NULL)
+            free(str);
 
-		return 0;
-	}
-	*(buf + y) = NULL;
-	free(str);
+        return 0;
+    }
+    *(buf + y) = NULL;
+    free(str);
 
-	*dest = buf;
+    *dest = buf;
 
-	return y;
+    return y;
 
 ERR:
-	lines	-= t_lines;
-	length	-= t_length;
+    if (buf != NULL) {
+        lines = y;
+        y = 0;
+        while (y <= lines) {
+            if (*(buf + y) != NULL)
+                free(*(buf + y));
+            y++;
+        }
+        free(buf);
+    }
+    if (str != NULL)
+        free(str);
 
-	y = 0;
-	if (buf != NULL) {
-		while (y <= lines) {
-			if (*(buf + y) != NULL)
-				free(*(buf + y));
-			y++;
-		}
-		free(buf);
-	}
-	if (str != NULL)
-		free(str);
-
-	return status;
+    return status;
 }
 
 int file_is_binary(FILE* fp)
 {
-	int c	= 0;
+    int c   = 0;
 
-	while ((c = fgetc(fp)) != EOF) {
-		if (c <= 0x08)
-			return c;
-	}
+    while ((c = fgetc(fp)) != EOF) {
+        if (c <= 0x08)
+            return c;
+    }
 
-	return 0;
+    return 0;
 }
 
 int watch_fd(int fd, long timeout)
 {
-	fd_set	fdset;
+    fd_set  fdset;
 
-	struct	timeval tm;
+    struct  timeval tm;
 
-	FD_ZERO(&fdset);
-	FD_SET(fd, &fdset);
+    FD_ZERO(&fdset);
+    FD_SET(fd, &fdset);
 
-	tm.tv_sec = tm.tv_usec = timeout;
+    tm.tv_sec = tm.tv_usec = timeout;
 
-	return select(fd + 1, &fdset, NULL, NULL, &tm);
+    return select(fd + 1, &fdset, NULL, NULL, &tm);
 }
