@@ -305,11 +305,13 @@ char** str_to_args(char* str)
      *  dqtf : double quote flag
      */
     int     i,
-            sx, xt, ax, ay,
+            ax, ay,
             elmc,
             dspf,
             sqtf,
             dqtf;
+
+    size_t  sx, xt;
 
     char**  args    = NULL;
     
@@ -462,9 +464,8 @@ int strcmp_lite(const char* str1, const char* str2)
     if (str1 == NULL || str2 == NULL)
         return -1;
 
-    int     cnt     = 0;
-
-    size_t  len1    = 0,
+    size_t  cnt     = 0,
+            len1    = 0,
             len2    = 0;
 
     len1 = strlen(str1);

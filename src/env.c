@@ -22,11 +22,11 @@ int split_env(char* env, env_t **dest)
     if (env == NULL)
         return -1;
 
-    int     i       = 0,
-            x       = 0,
+    int     x       = 0,
             y       = 0;
 
-    size_t  head    = 0,
+    size_t  i       = 0,
+            head    = 0,
             tail    = 0;
 
     env_t*  buf     = NULL;
