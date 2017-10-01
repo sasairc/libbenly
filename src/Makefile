@@ -24,6 +24,7 @@ OBJS         = libbenly_cmd.$(SUFFIX)    \
                libbenly_env.$(SUFFIX)    \
                libbenly_file.$(SUFFIX)   \
                libbenly_memory.$(SUFFIX) \
+               libbenly_proc.$(SUFFIX)   \
                libbenly_signal.$(SUFFIX) \
                libbenly_string.$(SUFFIX)
 DEFCFLAGS    = -fPIC                     \
@@ -95,6 +96,17 @@ else
 	$(CC) $(LDFLAGS) memory.o -o $@ $(DEFLDFLAGS)
 endif
 
+libbenly_proc.$(SUFFIX): proc.c proc.h
+ifeq ($(CMDLINE), 0)
+	@echo "  CC      proc.o"
+	@$(CC) $(CFLAGS) -c $< -o proc.o $(DEFCFLAGS)
+	@echo "  CCLD    $@"
+	@$(CC) $(LDFLAGS) proc.o -o $@ $(DEFLDFLAGS)
+else
+	$(CC) $(CFLAGS) -c $< -o proc.o $(DEFCFLAGS)
+	$(CC) $(LDFLAGS) proc.o -o $@ $(DEFLDFLAGS)
+endif
+
 libbenly_signal.$(SUFFIX): signal.c signal.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      signal.o"
@@ -131,6 +143,9 @@ install-lib: $(OBJS)
 	install -pm 755 libbenly_memory.$(SUFFIX) $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_memory.$(SUFFIX)
+	install -pm 755 libbenly_proc.$(SUFFIX) $(LIBDIR)/libbenly_proc.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_proc.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_proc.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_proc.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_proc.$(SUFFIX)
 	install -pm 755 libbenly_signal.$(SUFFIX) $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_signal.$(SUFFIX)
@@ -142,6 +157,7 @@ ifeq ($(shell uname), Darwin)
 	install_name_tool -change "libbenly_env.dylib" "$(LIBDIR)/libbenly_env.dylib" $(LIBDIR)/libbenly_env.dylib
 	install_name_tool -change "libbenly_file.dylib" "$(LIBDIR)/libbenly_file.dylib" $(LIBDIR)/libbenly_file.dylib
 	install_name_tool -change "libbenly_memory.dylib" "$(LIBDIR)/libbenly_memory.dylib" $(LIBDIR)/libbenly_memory.dylib
+	install_name_tool -change "libbenly_proc.dylib" "$(LIBDIR)/libbenly_proc.dylib" $(LIBDIR)/libbenly_proc.dylib
 	install_name_tool -change "libbenly_signal.dylib" "$(LIBDIR)/libbenly_signal.dylib" $(LIBDIR)/libbenly_signal.dylib
 	install_name_tool -change "libbenly_string.dylib" "$(LIBDIR)/libbenly_string.dylib" $(LIBDIR)/libbenly_string.dylib
 # for Darwin

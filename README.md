@@ -134,6 +134,22 @@ void* srealloc(void* ptr, size_t size, const char* fmt, ...);
 void free2d(char** buf, int y);
 ```
 
+### proc.h
+
+```c
+typedef struct PROC {
+    int     argc;
+    char**  argv;
+    char**  envp;
+    int     (*set)(struct PROC** proc, const char* cmd);
+    int     (*exec)(struct PROC* proc);
+    int     (*ready)(struct PROC* proc);
+    void    (*release)(struct PROC* proc);
+} PROC;
+
+int init_proc(PROC** proc);
+```
+
 ### signal.h
 
 ```c
