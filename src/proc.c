@@ -47,6 +47,40 @@ int init_proc(PROC** proc)
     return 0;
 }
 
+int simple_exec(const char* cmd)
+{
+    int     status  = 0;
+
+    PROC*   proc    = NULL;
+
+    do {
+        if (init_proc(&proc) < 0) {
+            status = -1; break;
+        }
+        if (proc->set(&proc, cmd) < 0) {
+            status = -2; break;
+        }
+        if (proc->ready(proc) < 0) {
+            status = -3; break;
+        }
+        if (proc->exec(proc) < 0) {
+            status = -4; break;
+        }
+    } while (0);
+
+    switch (status) {
+        case    -1:
+            break;
+        case    -2:
+        case    -3:
+        case    -4:
+            proc->release(proc);
+            break;
+    }
+
+    return status;
+}
+
 static
 int set_cmd_proc(PROC** proc, const char* cmd)
 {

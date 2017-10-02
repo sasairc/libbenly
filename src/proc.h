@@ -28,6 +28,7 @@ typedef struct PROC {
 } PROC;
 
 extern int init_proc(PROC** proc);
+extern int simple_exec(const char* cmd);
 
 #ifdef  __cplusplus
 }
