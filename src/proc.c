@@ -163,7 +163,9 @@ ERR:
 static
 pid_t fork_proc(PROC** proc)
 {
-    return (*proc)->pid = fork();
+    (*proc)->pid = fork();
+
+    return (*proc)->pid;
 }
 
 static
