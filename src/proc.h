@@ -28,6 +28,7 @@ typedef struct PROC {
 #ifdef  _GNU_SOURCE
     int     (*set_env)(struct PROC** proc, char* const envp[]);
     void    (*unset_env)(struct PROC** proc);
+    pid_t   (*rfork)(struct PROC** proc, unsigned long flags);
 /* _GNU_SOURCE */
 #endif
     pid_t   (*fork)(struct PROC** proc);

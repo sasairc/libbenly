@@ -224,6 +224,7 @@ typedef struct PROC {
 #ifdef  _GNU_SOURCE
     int     (*set_env)(struct PROC** proc, char* const envp[]);
     void    (*unset_env)(struct PROC** proc);
+    pid_t   (*rfork)(struct PROC** proc, unsigned long flags);
 /* _GNU_SOURCE */
 #endif
     pid_t   (*fork)(struct PROC** proc);
@@ -236,6 +237,8 @@ typedef struct PROC {
 int init_proc(PROC** proc);
 int simple_exec(const char* cmd);
 ```
+
+The cloning flags is defined in the file *sys/sched.h*.
 
 ### signal.h
 

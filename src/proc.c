@@ -30,6 +30,9 @@ static void release_proc(PROC* proc);
 static void release_argv_proc(PROC* proc);
 
 #ifdef  _GNU_SOURCE
+#include <sys/syscall.h>
+
+static pid_t rfork_proc(PROC** proc, unsigned long flags);
 static int set_env_proc(PROC** proc, char* const envp[]);
 static void unset_env_proc(PROC** proc);
 static void release_env_proc(PROC* proc);
@@ -51,6 +54,7 @@ int init_proc(PROC** proc)
 #ifdef  _GNU_SOURCE
         prc->set_env    = set_env_proc;
         prc->unset_env  = unset_env_proc;
+        prc->rfork      = rfork_proc;
 /* _GNU_SOURCE */
 #endif
         prc->fork       = fork_proc;
@@ -167,6 +171,17 @@ pid_t fork_proc(PROC** proc)
 
     return (*proc)->pid;
 }
+
+#ifdef  _GNU_SOURCE
+static
+pid_t rfork_proc(PROC** proc, unsigned long flags)
+{
+    (*proc)->pid = syscall(SYS_clone, flags, 0, 0, 0, 0);
+
+    return (*proc)->pid;
+}
+/* _GNU_SOURCE */
+#endif
 
 static
 int wait_proc(PROC* proc, int opts)
