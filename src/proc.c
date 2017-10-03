@@ -14,13 +14,16 @@
 #include "./string.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <string.h>
+#include <sys/wait.h>
 
 #define SP  " "
 
 static int set_cmd_proc(PROC** proc, const char* cmd);
+static pid_t fork_proc(PROC** proc);
+static int wait_proc(PROC* proc, int opts);
 static int exec_proc(PROC* proc);
 static int exec_ready_proc(PROC* proc);
 static void release_proc(PROC* proc);
@@ -28,6 +31,7 @@ static void release_argv_proc(PROC* proc);
 
 #ifdef  _GNU_SOURCE
 static int set_env_proc(PROC** proc, char* const envp[]);
+static void unset_env_proc(PROC** proc);
 static void release_env_proc(PROC* proc);
 /* _GNU_SOURCE */
 #endif
@@ -46,8 +50,11 @@ int init_proc(PROC** proc)
         prc->set        = set_cmd_proc;
 #ifdef  _GNU_SOURCE
         prc->set_env    = set_env_proc;
+        prc->unset_env  = unset_env_proc;
 /* _GNU_SOURCE */
 #endif
+        prc->fork       = fork_proc;
+        prc->wait       = wait_proc;
         prc->exec       = exec_proc;
         prc->ready      = exec_ready_proc;
         prc->release    = release_proc;
@@ -153,6 +160,23 @@ ERR:
     return status;
 }
 
+static
+pid_t fork_proc(PROC** proc)
+{
+    return (*proc)->pid = fork();
+}
+
+static
+int wait_proc(PROC* proc, int opts)
+{
+    int     status  = 0;
+
+    if (waitpid(proc->pid, &status, opts) < 0)
+        return -1;
+
+    return status;
+}
+
 #ifdef  _GNU_SOURCE
 static
 int set_env_proc(PROC** proc, char* const env[])
@@ -202,6 +226,38 @@ ERR:
 }
 
 static
+void unset_env_proc(PROC** proc)
+{
+    if ((*proc)->envp != NULL) {
+        release_env_proc(*proc);
+        (*proc)->envp = NULL;
+    }
+
+    return;
+}
+
+static
+void release_env_proc(PROC* proc)
+{
+    size_t  i   = 0;
+
+    if (proc->envp != NULL) {
+        while (*(proc->envp + i) != NULL) {
+            free(*(proc->envp + i));
+            *(proc->envp + i) = NULL;
+            i++;
+        }
+        free(proc->envp);
+        proc->envp = NULL;
+    }
+
+    return;
+}
+/* _GNU_SOURCE */
+#endif
+
+#ifdef  _GNU_SOURCE
+static
 int exec_proc(PROC* proc)
 {
     if (proc->ready(proc) < 0)
@@ -227,10 +283,10 @@ int exec_proc(PROC* proc)
 static
 int exec_ready_proc(PROC* proc)
 {
-    if (proc->argc > 0 && proc->argv != NULL)
-        return 0;
+    if (proc->argc <= 0 || proc->argv == NULL)
+        return -1;
 
-    return -1;
+    return 0;
 }
 
 static
@@ -268,24 +324,3 @@ void release_argv_proc(PROC* proc)
 
     return;
 }
-
-#ifdef  _GNU_SOURCE
-static
-void release_env_proc(PROC* proc)
-{
-    size_t  i   = 0;
-
-    if (proc->envp != NULL) {
-        while (*(proc->envp + i) != NULL) {
-            free(*(proc->envp + i));
-            *(proc->envp + i) = NULL;
-            i++;
-        }
-        free(proc->envp);
-        proc->envp = NULL;
-    }
-
-    return;
-}
-/* _GNU_SOURCE */
-#endif

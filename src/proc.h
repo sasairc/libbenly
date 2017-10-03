@@ -17,15 +17,21 @@ extern "C" {
 /* __cplusplus */
 #endif
 
+#include <unistd.h>
+
 typedef struct PROC {
+    pid_t   pid;
     int     argc;
     char**  argv;
     char**  envp;
     int     (*set)(struct PROC** proc, const char* cmd);
 #ifdef  _GNU_SOURCE
     int     (*set_env)(struct PROC** proc, char* const envp[]);
+    void    (*unset_env)(struct PROC** proc);
 /* _GNU_SOURCE */
 #endif
+    pid_t   (*fork)(struct PROC** proc);
+    int     (*wait)(struct PROC* proc, int opts);
     int     (*exec)(struct PROC* proc);
     int     (*ready)(struct PROC* proc);
     void    (*release)(struct PROC* proc);
