@@ -8,7 +8,7 @@ INCLUDEDIR := $(PREFIX)/include
 MAKE	   := make
 CC	   := cc
 RM	   := rm
-CFLAGS	   := -O2 -g
+CFLAGS	   := -O2 -g -Wall -Wextra
 LDFLAGS    :=
 CMDLINE    := 0
 export

@@ -22,6 +22,10 @@ typedef struct PROC {
     char**  argv;
     char**  envp;
     int     (*set)(struct PROC** proc, const char* cmd);
+#ifdef  _GNU_SOURCE
+    int     (*set_env)(struct PROC** proc, char* const envp[]);
+/* _GNU_SOURCE */
+#endif
     int     (*exec)(struct PROC* proc);
     int     (*ready)(struct PROC* proc);
     void    (*release)(struct PROC* proc);

@@ -23,8 +23,10 @@ libbenly (便利) - less a misc than a poor library.
 
 ## Usage
 
+### sample 1
+
 ```shellsession
-% cat example.c
+% cat example1.c
 #include <stdio.h>
 #include <benly/env.h>
 
@@ -38,14 +40,15 @@ int main(void)
         return 1;
 
     for (i = 0; i < envt->envc; i++)
-        fprintf(stdout, "%s\n", envt->envs[i]);
+        fprintf(stdout, "%s\n",
+            *(envt->envs + i));
 
     release_env_t(envt);
 
     return 0;
 }
-% gcc example.c -o example -lbenly_env -lbenly_memory
-% ./example
+% gcc example1.c -o example1 -lbenly_env -lbenly_memory
+% ./example1
 /usr/local/sbin
 /usr/local/bin
 /usr/sbin
@@ -54,6 +57,67 @@ int main(void)
 /bin
 ```
 
+### sample 2
+
+```shellsession
+% cat example2.c
+#include <benly/proc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void)
+{
+    PROC*   proc    = NULL;
+
+    int     n       = 10;
+
+    /* command line */
+    char*   cmd     = "date -d tomorrow";
+
+    /* environment */
+    char*   utc[]   = {
+        "LANG=C", "TZ=UTC", NULL,
+    };
+    char*   jst[]   = {
+        "LANG=ja_JP.UTF-8", "TZ=JST", NULL,
+    };
+
+    init_proc(&proc);
+    proc->set(&proc, cmd);
+    while (n > 0) {
+        if (n % 2)
+            proc->set_env(&proc, jst);
+        else
+            proc->set_env(&proc, utc);
+        switch (fork()) {
+            case    0:
+                proc->exec(proc);
+                exit(0);
+            default:
+                wait(NULL);
+                sleep(1);
+        }
+        n--;
+    }
+    proc->release(proc);
+
+    return 0;
+}
+% gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc -D_GNU_SOURCE
+% ./example2
+Wed Oct  4 06:13:50 UTC 2017
+2017年 10月  4日 水曜日 06:13:51 JST
+Wed Oct  4 06:13:52 UTC 2017
+2017年 10月  4日 水曜日 06:13:53 JST
+Wed Oct  4 06:13:54 UTC 2017
+2017年 10月  4日 水曜日 06:13:55 JST
+Wed Oct  4 06:13:56 UTC 2017
+2017年 10月  4日 水曜日 06:13:57 JST
+Wed Oct  4 06:13:58 UTC 2017
+2017年 10月  4日 水曜日 06:13:59 JST
+```
 
 ## Function List
 
@@ -137,17 +201,24 @@ void free2d(char** buf, int y);
 ### proc.h
 
 ```c
+#include <benly/proc.h>
+
 typedef struct PROC {
     int     argc;
     char**  argv;
     char**  envp;
     int     (*set)(struct PROC** proc, const char* cmd);
+#ifdef	_GNU_SOURCE
+    int     (*set_env)(struct PROC** proc, char* const envp[]);
+/* _GNU_SOURCE */
+#endif
     int     (*exec)(struct PROC* proc);
     int     (*ready)(struct PROC* proc);
     void    (*release)(struct PROC* proc);
 } PROC;
 
 int init_proc(PROC** proc);
+int simple_exec(const char* cmd);
 ```
 
 ### signal.h
