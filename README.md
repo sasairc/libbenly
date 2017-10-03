@@ -71,14 +71,12 @@ int main(void)
 #include <benly/proc.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
 
 int main(void)
 {
     PROC*   proc    = NULL;
 
-    int     n       = 10;
+    int     n       = 12;
 
     /* command line */
     char*   cmd     = "date -d tomorrow";
@@ -87,24 +85,26 @@ int main(void)
     char*   utc[]   = {
         "LANG=C", "TZ=UTC", NULL,
     };
-    char*   jst[]   = {
-        "LANG=ja_JP.UTF-8", "TZ=Japan", NULL,
+    char*   fra[]   = {
+        "LANG=fr_FR.UTF-8", "TZ=Paris", NULL,
     };
 
     init_proc(&proc);
     proc->set(&proc, cmd);
     while (n > 0) {
-        if (n % 2)
-            proc->set_env(&proc, jst);
+        if (!(n % 2))
+            proc->unset_env(&proc);
+        else if (!(n % 3))
+            proc->set_env(&proc, fra);
         else
             proc->set_env(&proc, utc);
-        switch (fork()) {
+
+        switch (proc->fork(&proc)) {
             case    0:
                 proc->exec(proc);
                 exit(0);
             default:
-                wait(NULL);
-                sleep(1);
+                proc->wait(proc, 0);
         }
         n--;
     }
@@ -117,16 +117,18 @@ int main(void)
 ```shellsession
 % gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc -D_GNU_SOURCE
 % ./example2
-Wed Oct  4 06:26:23 UTC 2017
-2017年 10月  4日 水曜日 15:26:24 JST
-Wed Oct  4 06:26:25 UTC 2017
-2017年 10月  4日 水曜日 15:26:26 JST
-Wed Oct  4 06:26:27 UTC 2017
-2017年 10月  4日 水曜日 15:26:28 JST
-Wed Oct  4 06:26:29 UTC 2017
-2017年 10月  4日 水曜日 15:26:30 JST
-Wed Oct  4 06:26:31 UTC 2017
-2017年 10月  4日 水曜日 15:26:32 JST
+2017年 10月  4日 水曜日 17:40:28 JST
+Wed Oct  4 08:40:28 UTC 2017
+2017年 10月  4日 水曜日 17:40:28 JST
+mercredi 4 octobre 2017, 08:40:28 (UTC+0000)
+2017年 10月  4日 水曜日 17:40:28 JST
+Wed Oct  4 08:40:28 UTC 2017
+2017年 10月  4日 水曜日 17:40:28 JST
+Wed Oct  4 08:40:28 UTC 2017
+2017年 10月  4日 水曜日 17:40:28 JST
+mercredi 4 octobre 2017, 08:40:28 (UTC+0000)
+2017年 10月  4日 水曜日 17:40:28 JST
+Wed Oct  4 08:40:28 UTC 2017
 ```
 
 ## Function List
