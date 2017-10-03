@@ -25,8 +25,10 @@ libbenly (便利) - less a misc than a poor library.
 
 ### sample 1
 
-```shellsession
-% cat example1.c
+```c
+/*
+ * example1.c
+ */
 #include <stdio.h>
 #include <benly/env.h>
 
@@ -47,6 +49,9 @@ int main(void)
 
     return 0;
 }
+```
+
+```shellsession
 % gcc example1.c -o example1 -lbenly_env -lbenly_memory
 % ./example1
 /usr/local/sbin
@@ -59,8 +64,10 @@ int main(void)
 
 ### sample 2
 
-```shellsession
-% cat example2.c
+```c
+/*
+ * example2.c
+ */
 #include <benly/proc.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,7 +88,7 @@ int main(void)
         "LANG=C", "TZ=UTC", NULL,
     };
     char*   jst[]   = {
-        "LANG=ja_JP.UTF-8", "TZ=JST", NULL,
+        "LANG=ja_JP.UTF-8", "TZ=Japan", NULL,
     };
 
     init_proc(&proc);
@@ -105,18 +112,21 @@ int main(void)
 
     return 0;
 }
+```
+
+```shellsession
 % gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc -D_GNU_SOURCE
 % ./example2
-Wed Oct  4 06:13:50 UTC 2017
-2017年 10月  4日 水曜日 06:13:51 JST
-Wed Oct  4 06:13:52 UTC 2017
-2017年 10月  4日 水曜日 06:13:53 JST
-Wed Oct  4 06:13:54 UTC 2017
-2017年 10月  4日 水曜日 06:13:55 JST
-Wed Oct  4 06:13:56 UTC 2017
-2017年 10月  4日 水曜日 06:13:57 JST
-Wed Oct  4 06:13:58 UTC 2017
-2017年 10月  4日 水曜日 06:13:59 JST
+Wed Oct  4 06:26:23 UTC 2017
+2017年 10月  4日 水曜日 15:26:24 JST
+Wed Oct  4 06:26:25 UTC 2017
+2017年 10月  4日 水曜日 15:26:26 JST
+Wed Oct  4 06:26:27 UTC 2017
+2017年 10月  4日 水曜日 15:26:28 JST
+Wed Oct  4 06:26:29 UTC 2017
+2017年 10月  4日 水曜日 15:26:30 JST
+Wed Oct  4 06:26:31 UTC 2017
+2017年 10月  4日 水曜日 15:26:32 JST
 ```
 
 ## Function List
