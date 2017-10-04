@@ -39,6 +39,16 @@ static void release_env_proc(PROC* proc);
 /* _GNU_SOURCE */
 #endif
 
+static int add_mproc(MPROC** mproc, PROC* proc);
+static int fork_mproc(MPROC* mproc);
+#ifdef  _GNU_SOURCE
+static int rfork_mproc(MPROC* mproc, unsigned long flags);
+/* _GNU_SOURCE */
+#endif
+static int wait_mproc(MPROC** mproc, int opts);
+static int exec_mproc(MPROC* mproc, int proc_no);
+static void release_mproc(MPROC* mproc);
+
 int init_proc(PROC** proc)
 {
     PROC*   prc     = NULL;
@@ -342,6 +352,109 @@ void release_argv_proc(PROC* proc)
     return;
 }
 
+int init_mproc(MPROC** mproc)
+{
+    MPROC*  mprc    = NULL;
+
+    if ((mprc = (MPROC*)
+                malloc(sizeof(MPROC))) == NULL) {
+        return -1;
+    } else {
+        mprc->procs     = 0;
+        mprc->add       = add_mproc;
+        mprc->fork      = fork_mproc;
+#ifdef  _GNU_SOURCE
+        mprc->rfork     = rfork_mproc;
+/* _GNU_SOURCE */
+#endif
+        mprc->exec      = exec_mproc;
+        mprc->wait      = wait_mproc;
+        mprc->release   = release_mproc;
+    }
+    *mproc = mprc;
+
+    return 0;
+}
+
+static
+int add_mproc(MPROC** mproc, PROC* proc)
+{
+    if ((*mproc)->procs >= MPROC_MAX)
+        return -1;
+
+    (*mproc)->proc[(*mproc)->procs] = proc;
+    (*mproc)->procs++;
+
+    return 0;
+}
+
+static
+int fork_mproc(MPROC* mproc)
+{
+    int     proc_no = 0;
+
+    for (proc_no = 0;
+            proc_no < mproc->procs &&
+            (mproc->proc_no = mproc->proc[proc_no]->fork(&mproc->proc[proc_no])); proc_no++);
+
+    return proc_no;
+}
+
+#ifdef  _GNU_SOURCE
+static
+int rfork_mproc(MPROC* mproc, unsigned long flags)
+{
+    int     proc_no = 0;
+
+    for (proc_no = 0;
+            proc_no < mproc->procs &&
+            (mproc->proc_no = mproc->proc[proc_no]->rfork(&mproc->proc[proc_no], flags)); proc_no++);
+
+    return proc_no;
+}
+/* _GNU_SOURCE */
+#endif
+
+static
+int exec_mproc(MPROC* mproc, int proc_no)
+{
+    return mproc->proc[proc_no]->exec(mproc->proc[proc_no]);
+}
+
+static
+int wait_mproc(MPROC** mproc, int opts)
+{
+    int     i       = 0,
+            status  = 0;
+
+    while (i < (*mproc)->procs && i < (*mproc)->procs) {
+        status += (*mproc)->proc[i]->wait((*mproc)->proc[i], opts);
+        i++;
+    }
+
+    return status;
+}
+
+static
+void release_mproc(MPROC* mproc)
+{
+    int     i   = 0;
+
+    if (mproc != NULL) {
+        while (i < mproc->procs) {
+            if (mproc->proc[i] != NULL) {
+                mproc->proc[i]->release(mproc->proc[i]);
+                mproc->proc[i] = NULL;
+                i++;
+            }
+        }
+        free(mproc);
+        mproc = NULL;
+    }
+
+    return;
+}
+
 static
 char* mbstrtok(char* str, char* delimiter)
 {
@@ -363,3 +476,4 @@ char* mbstrtok(char* str, char* delimiter)
 
     return str;
 }
+

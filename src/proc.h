@@ -19,6 +19,9 @@ extern "C" {
 
 #include <unistd.h>
 
+#define MPROC_MAX   32
+#define IS_PARENT(a) (a == mproc->procs)
+
 typedef struct PROC {
     pid_t   pid;
     int     argc;
@@ -38,7 +41,23 @@ typedef struct PROC {
     void    (*release)(struct PROC* proc);
 } PROC;
 
+typedef struct MPROC {
+    PROC*   proc[MPROC_MAX];
+    int     procs;
+    int     proc_no;
+    int     (*add)(struct MPROC** mproc, PROC* proc);
+    int     (*fork)(struct MPROC* mproc);
+#ifdef  _GNU_SOURCE
+    int     (*rfork)(struct MPROC* mproc, unsigned long flags);
+/* _GNU_SOURCE */
+#endif
+    int     (*exec)(struct MPROC* mproc, int proc_no);
+    int     (*wait)(struct MPROC** mproc, int opts);
+    void    (*release)(struct MPROC* mproc);
+} MPROC;
+
 extern int init_proc(PROC** proc);
+extern int init_mproc(MPROC** mproc);
 extern int simple_exec(const char* cmd);
 
 #ifdef  __cplusplus
