@@ -176,10 +176,7 @@ pid_t fork_proc(PROC** proc)
 static
 pid_t rfork_proc(PROC** proc, unsigned long flags)
 {
-    pid_t   pid;
-
-    pid = syscall(SYS_clone, flags, 0, 0, 0, 0);
-    (*proc)->pid = pid;
+    (*proc)->pid = syscall(SYS_clone, flags, 0, 0, 0, 0);
 
     return (*proc)->pid;
 }

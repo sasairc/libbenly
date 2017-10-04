@@ -16,6 +16,8 @@ libbenly (便利) - less a misc than a poor library.
 % make WITH_GLIB=0    # build without libglib-2 support
 % make WITH_REGEX=1   # build with POSIX Regular expression matching types (regex.h)
 % make WITH_REGEX=0   # build without POSIX Regular expression matching types (regex.h)
+% make WITH_GNU=1     # build with GNU C Extensions support
+% make WITH_GNU=0     # build without GNU C Extensions support
 % make CMDLINE=1      # verbose mode
 % make CMDLINE=0      # silent mode
 # make install
