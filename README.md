@@ -68,9 +68,12 @@ int main(void)
 /*
  * example2.c
  */
+#define _GNU_SOURCE
+
 #include <benly/proc.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <signal.h>
+/* #include <linux/sched.h> */
 
 int main(void)
 {
@@ -99,10 +102,9 @@ int main(void)
         else
             proc->set_env(&proc, utc);
 
-        switch (proc->fork(&proc)) {
+        switch (proc->rfork(&proc, SIGCHLD)) {
             case    0:
                 proc->exec(proc);
-                exit(0);
             default:
                 proc->wait(proc, 0);
         }
@@ -115,20 +117,20 @@ int main(void)
 ```
 
 ```shellsession
-% gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc -D_GNU_SOURCE
+% gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc
 % ./example2
-2017年 10月  4日 水曜日 17:40:28 JST
-Wed Oct  4 08:40:28 UTC 2017
-2017年 10月  4日 水曜日 17:40:28 JST
-mercredi 4 octobre 2017, 08:40:28 (UTC+0000)
-2017年 10月  4日 水曜日 17:40:28 JST
-Wed Oct  4 08:40:28 UTC 2017
-2017年 10月  4日 水曜日 17:40:28 JST
-Wed Oct  4 08:40:28 UTC 2017
-2017年 10月  4日 水曜日 17:40:28 JST
-mercredi 4 octobre 2017, 08:40:28 (UTC+0000)
-2017年 10月  4日 水曜日 17:40:28 JST
-Wed Oct  4 08:40:28 UTC 2017
+2017年 10月  5日 木曜日 12:18:32 JST
+Thu Oct  5 03:18:32 UTC 2017
+2017年 10月  5日 木曜日 12:18:32 JST
+jeudi 5 octobre 2017, 03:18:32 (UTC+0000)
+2017年 10月  5日 木曜日 12:18:32 JST
+Thu Oct  5 03:18:32 UTC 2017
+2017年 10月  5日 木曜日 12:18:32 JST
+Thu Oct  5 03:18:32 UTC 2017
+2017年 10月  5日 木曜日 12:18:32 JST
+jeudi 5 octobre 2017, 03:18:32 (UTC+0000)
+2017年 10月  5日 木曜日 12:18:32 JST
+Thu Oct  5 03:18:32 UTC 2017
 ```
 
 ## Function List
@@ -238,7 +240,7 @@ int init_proc(PROC** proc);
 int simple_exec(const char* cmd);
 ```
 
-The cloning flags is defined in the file *sys/sched.h*.
+The cloning flags is defined in the file *linux/sched.h*.
 
 ### signal.h
 
