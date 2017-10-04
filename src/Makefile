@@ -40,6 +40,10 @@ DEFLDFLAGS   = -dynamiclib -undefined suppress -flat_namespace	\
 	       -compatibility_version $(VERSION).$(PATCHLEVEL)
 # for Darwin
 endif
+# use GNU Extensions
+ifeq ($(WITH_GNU), 1)
+DEFCFLAGS    += -D_GNU_SOURCE -D__USE_GNU
+endif
 # with glib-2.0
 ifeq ($(WITH_GLIB), 1)
 DEFCFLAGS    += -DWITH_GLIB `pkg-config --cflags --libs glib-2.0`
