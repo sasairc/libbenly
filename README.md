@@ -16,6 +16,8 @@ libbenly (便利) - less a misc than a poor library.
 % make WITH_GLIB=0    # build without libglib-2 support
 % make WITH_REGEX=1   # build with POSIX Regular expression matching types (regex.h)
 % make WITH_REGEX=0   # build without POSIX Regular expression matching types (regex.h)
+% make WITH_GNU=1     # build with GNU C Extensions support
+% make WITH_GNU=0     # build without GNU C Extensions support
 % make CMDLINE=1      # verbose mode
 % make CMDLINE=0      # silent mode
 # make install
@@ -52,7 +54,7 @@ int main(void)
 ```
 
 ```shellsession
-% gcc example1.c -o example1 -lbenly_env -lbenly_memory
+% gcc example1.c -o example1 -lbenly_env
 % ./example1
 /usr/local/sbin
 /usr/local/bin
@@ -117,7 +119,7 @@ int main(void)
 ```
 
 ```shellsession
-% gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc
+% gcc example2.c -o example2 -lbenly_proc
 % ./example2
 2017年 10月  5日 木曜日 12:18:32 JST
 Thu Oct  5 03:18:32 UTC 2017

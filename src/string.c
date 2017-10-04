@@ -11,7 +11,6 @@
  */
 
 #include "./string.h"
-#include "./memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -63,9 +62,7 @@ int strrep(char* src, char* haystack, char* needle)
         /* reallocate memory */
         bak = src;
         if ((src = (char*)
-                    srealloc(src,
-                        strlen(src) + strlen(needle) + 1 - strlen(haystack),
-                        NULL)) == NULL) {
+                    realloc(src, strlen(src) + strlen(needle) + 1 - strlen(haystack))) == NULL) {
             status = -3; goto ERR;
         }
 
@@ -120,7 +117,7 @@ char* strlion(int argnum, ...)
     va_list list;       /* list of variable arguments */
 
     if ((argmnt = (char**)
-                smalloc(sizeof(char*) * argnum, NULL)) == NULL)
+                malloc(sizeof(char*) * argnum)) == NULL)
         goto ERR;
 
     /* processing of variable arguments */
@@ -134,7 +131,7 @@ char* strlion(int argnum, ...)
 
     /* memory allocation */
     if ((dest = (char*)
-                smalloc(sizeof(char) * (arglen + 1), NULL)) == NULL)
+                malloc(sizeof(char) * (arglen + 1))) == NULL)
         goto ERR;
 
     /* concat strings */
@@ -342,7 +339,7 @@ char** str_to_args(char* str)
     }
     if (elmc > 0) {
         if ((args = (char**)
-                    smalloc(sizeof(char*) * (elmc + 1), NULL)) == NULL)
+                    malloc(sizeof(char*) * (elmc + 1))) == NULL)
             return NULL;
     } else {
         return NULL;
@@ -375,7 +372,7 @@ char** str_to_args(char* str)
                 continue;
             }
             if ((args[ay] = (char*)
-                        smalloc(sizeof(char) * (sx - xt + 1), NULL)) == NULL)
+                        malloc(sizeof(char) * (sx - xt + 1))) == NULL)
                 goto ERR;
 
             for (ax = 0; xt < sx; xt++, ax++)

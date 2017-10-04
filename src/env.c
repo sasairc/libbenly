@@ -11,7 +11,6 @@
  */
 
 #include "./env.h"
-#include "./memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +31,7 @@ int split_env(char* env, env_t **dest)
     env_t*  buf     = NULL;
 
     if ((buf = (env_t*)
-                smalloc(sizeof(env_t), NULL)) == NULL)
+                malloc(sizeof(env_t))) == NULL)
         return -1;
 
     i = 0;
@@ -43,14 +42,14 @@ int split_env(char* env, env_t **dest)
         i++;
     }
     if ((buf->envs = (char**)
-                smalloc(sizeof(char*) * buf->envc, NULL)) == NULL)
+                malloc(sizeof(char*) * buf->envc)) == NULL)
         goto ERR;
 
     i = x = y = head = tail = 0;
     do {
         if (*(env + tail) == ':' || *(env + tail) == '\0') {
             if ((*(buf->envs + y) = (char*)
-                        smalloc(sizeof(char) * (tail - head + 1), NULL)) == NULL)
+                        malloc(sizeof(char) * (tail - head + 1))) == NULL)
                 goto ERR;
 
             while (head < tail) {
@@ -58,7 +57,7 @@ int split_env(char* env, env_t **dest)
                 head++;
                 x++;
             }
-            *(*(buf->envs + y) + x + 1) = '\0';
+            *(*(buf->envs + y) + x) = '\0';
             x = 0;
             head++;
             y++;
