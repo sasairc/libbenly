@@ -11,7 +11,6 @@
  */
 
 #include "./file.h"
-#include "./memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,11 +50,11 @@ int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int c
         **  buf     = NULL;
 
     if ((str = (char*)
-                smalloc(sizeof(char) * t_length, NULL)) == NULL)
+                malloc(sizeof(char) * t_length)) == NULL)
         return -1;
 
     if ((buf = (char**)
-                smalloc(sizeof(char*) * t_lines, NULL)) == NULL) {
+                malloc(sizeof(char*) * t_lines)) == NULL) {
         status = -2; goto ERR;
     }
 
@@ -72,13 +71,13 @@ int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int c
                 if (y == (lines - 1)) {
                     lines += t_lines;
                     if ((buf = (char**)
-                                srealloc(buf, sizeof(char*) * lines, NULL)) == NULL) {
+                                realloc(buf, sizeof(char*) * lines)) == NULL) {
                         status = -3; goto ERR;
                     }
                 }
                 /* allocate array for X coordinate */
                 if ((*(buf + y) = (char*)
-                            smalloc(sizeof(char) * (tmplen + 1), NULL)) == NULL) {
+                            malloc(sizeof(char) * (tmplen + 1))) == NULL) {
                     status = -4; goto ERR;
                 }
 
@@ -95,7 +94,7 @@ int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int c
                 if (x == (length - 1)) {
                     length += t_length;
                     if ((str = (char*)
-                                srealloc(str, sizeof(char) * length, NULL)) == NULL) {
+                                realloc(str, sizeof(char) * length)) == NULL) {
                         status = -5; goto ERR;
                     }
                 }
@@ -118,13 +117,13 @@ int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int c
         if (y == (lines - 1)) {
             lines += t_lines;
             if ((buf = (char**)
-                        srealloc(buf, sizeof(char*) * lines, NULL)) == NULL) {
+                        realloc(buf, sizeof(char*) * lines)) == NULL) {
                 status = -6; goto ERR;
             }
         }
         /* allocate array for X coordinate */
         if ((*(buf + y) = (char*)
-                    smalloc(sizeof(char) * (tmplen + 1), NULL)) == NULL) {
+                    malloc(sizeof(char) * (tmplen + 1))) == NULL) {
             status = -7; goto ERR;
         }
 

@@ -11,7 +11,6 @@
  */
 
 #include "./cmd.h"
-#include "./string.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +22,9 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+static int trim(char* str);
+static char** str_to_args(char* str);
 
 int set_io_val(char* str, int flag, cmd_t** cmd)
 {
@@ -631,4 +633,154 @@ void release_cmd_t(cmd_t* cmd)
     }
 
     return;
+}
+
+static
+int trim(char* str)
+{
+    int     i       = 0,
+            j       = 0;
+
+    i = strlen(str) - 1;
+    while (i >= 0 && isspace(*(str + i))) {
+        i--;
+    }
+    *(str + i + 1) = '\0';
+    i = 0;
+    while (isspace(*(str + i)))
+        i++;
+
+    if (i > 0) {
+        j = 0;
+        while (*(str + i))
+            *(str + j++) = *(str + i++);
+        *(str + j) = '\0';
+    }
+
+    return 0;
+}
+
+static
+char** str_to_args(char* str)
+{
+    /*
+     * # note
+     *
+     *  sx   : current strings array pointer
+     *  xt   : temporary string array pointer
+     *  ax   : args array pointer (X)
+     *  ay   : args array pointer (Y)
+     *  elmc : elements counter
+     *  dspf : double space flag
+     *  sqtf : single quote flag
+     *  dqtf : double quote flag
+     */
+    int     i,
+            ax, ay,
+            elmc,
+            dspf,
+            sqtf,
+            dqtf;
+
+    size_t  sx, xt;
+
+    char**  args    = NULL;
+    
+    /* count elements */
+    for (i = dspf = sqtf = dqtf = 0, elmc = 1; str[i] != '\0'; i++) {
+        if (str[i] == '\'') {
+            if (sqtf == 0)
+                sqtf = 1;
+            else
+                sqtf = 0;
+        }
+        if (str[i] == '\"') {
+            if (dqtf == 0)
+                dqtf = 1;
+            else
+                dqtf = 0;
+        }
+        if (sqtf == 1 || dqtf == 1)
+            continue;
+
+        if (str[i] == ' ' || str[i] == '\t') {
+            if (dspf == 1)
+                continue;
+            elmc++;
+        } else {
+            dspf = 0;
+        }
+    }
+    if (elmc > 0) {
+        if ((args = (char**)
+                    malloc(sizeof(char*) * (elmc + 1))) == NULL)
+            return NULL;
+    } else {
+        return NULL;
+    }
+
+    /* string to args */
+    for (dspf = sqtf = dqtf = sx = ay = ax = xt = 0; sx <= strlen(str); sx++) {
+        if (str[sx] == ' ' || str[sx] == '\t' || str[sx] == '\0' || str[sx] == '\'' || str[sx] == '\"') {
+            if (str[sx] == '\'') {
+                if (sqtf == 0) {
+                    xt++;
+                    sqtf = 1;
+                } else {
+                    sqtf = 0;
+                }
+            }
+            if (str[sx] == '\"') {
+                if (dqtf == 0) {
+                    xt++;
+                    dqtf = 1;
+                } else {
+                    dqtf = 0;
+                }
+            }
+            if (sqtf == 1 || dqtf == 1)
+                continue;
+
+            if (dspf == 1) {
+                xt++;
+                continue;
+            }
+            if ((args[ay] = (char*)
+                        malloc(sizeof(char) * (sx - xt + 1))) == NULL)
+                goto ERR;
+
+            for (ax = 0; xt < sx; xt++, ax++)
+                    args[ay][ax] = str[xt];
+
+            args[ay][ax] = '\0';
+            xt++;
+            ay++;
+            dspf = 1;
+        } else {
+            dspf = 0;
+        }
+    }
+    /* null-terminated */
+    args[elmc] = NULL;
+
+#ifdef  DEBUG
+    fprintf(stderr, "DEBUG: str_to_args(): args(%p)\n", args);
+    for (i = 0; i <= elmc; i++)
+        fprintf(stderr, "DEBUG: str_to_args(): args[%d](%p) = %s\n", i, args[i], args[i]);
+/* DEBUG */
+#endif
+
+    return args;
+
+
+ERR:
+    for (i = 0; i < elmc; i++) {
+        if (args[i] != NULL) {
+            free(args[i]);
+            args[i] = NULL;
+        }
+    }
+    free(args);
+
+    return NULL;
 }

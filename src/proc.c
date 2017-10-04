@@ -11,7 +11,6 @@
  */
 
 #include "./proc.h"
-#include "./string.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +27,7 @@ static int exec_proc(PROC* proc);
 static int exec_ready_proc(PROC* proc);
 static void release_proc(PROC* proc);
 static void release_argv_proc(PROC* proc);
+static char* mbstrtok(char* str, char* delimiter);
 
 #ifdef  _GNU_SOURCE
 #include <sys/syscall.h>
@@ -176,7 +176,10 @@ pid_t fork_proc(PROC** proc)
 static
 pid_t rfork_proc(PROC** proc, unsigned long flags)
 {
-    (*proc)->pid = syscall(SYS_clone, flags, 0, 0, 0, 0);
+    pid_t   pid;
+
+    pid = syscall(SYS_clone, flags, 0, 0, 0, 0);
+    (*proc)->pid = pid;
 
     return (*proc)->pid;
 }
@@ -340,4 +343,26 @@ void release_argv_proc(PROC* proc)
     }
 
     return;
+}
+
+static
+char* mbstrtok(char* str, char* delimiter)
+{
+    static  char*   ptr = NULL;
+            char*   bdy = NULL;
+
+    if (!str)
+        str = ptr;
+
+    if (!str)
+        return NULL;
+
+    if ((bdy = strstr(str, delimiter)) != NULL) {
+        *bdy = '\0';
+        ptr = bdy + strlen(delimiter);
+    } else {
+        ptr = NULL;
+    }
+
+    return str;
 }

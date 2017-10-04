@@ -52,7 +52,7 @@ int main(void)
 ```
 
 ```shellsession
-% gcc example1.c -o example1 -lbenly_env -lbenly_memory
+% gcc example1.c -o example1 -lbenly_env
 % ./example1
 /usr/local/sbin
 /usr/local/bin
@@ -117,7 +117,7 @@ int main(void)
 ```
 
 ```shellsession
-% gcc example2.c -o example2 -lbenly_memory -lbenly_string -lbenly_proc
+% gcc example2.c -o example2 -lbenly_proc
 % ./example2
 2017年 10月  5日 木曜日 12:18:32 JST
 Thu Oct  5 03:18:32 UTC 2017
