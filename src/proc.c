@@ -45,6 +45,8 @@ static int fork_mproc(MPROC* mproc);
 static int rfork_mproc(MPROC* mproc, unsigned long flags);
 /* _GNU_SOURCE */
 #endif
+static int is_parent_mproc(MPROC* mproc, int proc_no);
+static int is_child_mproc(MPROC* mproc, int proc_no);
 static int wait_mproc(MPROC** mproc, int opts);
 static int exec_mproc(MPROC* mproc, int proc_no);
 static void release_mproc(MPROC* mproc);
@@ -368,6 +370,8 @@ int init_mproc(MPROC** mproc)
         mprc->rfork     = rfork_mproc;
 /* _GNU_SOURCE */
 #endif
+        mprc->is_parent = is_parent_mproc;
+        mprc->is_child  = is_child_mproc;
         mprc->exec      = exec_mproc;
         mprc->wait      = wait_mproc;
         mprc->release   = release_mproc;
@@ -415,6 +419,21 @@ int rfork_mproc(MPROC* mproc, unsigned long flags)
 }
 /* _GNU_SOURCE */
 #endif
+
+static
+int is_parent_mproc(MPROC* mproc, int proc_no)
+{
+    if (mproc->procs == proc_no)
+        return 1;
+
+    return 0;
+}
+
+static
+int is_child_mproc(MPROC* mproc, int proc_no)
+{
+    return !mproc->is_parent(mproc, proc_no);
+}
 
 static
 int exec_mproc(MPROC* mproc, int proc_no)

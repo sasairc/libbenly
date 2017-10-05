@@ -19,7 +19,10 @@ extern "C" {
 
 #include <unistd.h>
 
+#ifndef MPROC_MAX
 #define MPROC_MAX   32
+/* MPROC_MAX */
+#endif
 
 #define IS_PARENT(a,b) (a->procs == b)
 
@@ -53,6 +56,8 @@ typedef struct MPROC {
     int     (*rfork)(struct MPROC* mproc, unsigned long flags);
 /* _GNU_SOURCE */
 #endif
+    int     (*is_parent)(struct MPROC* mproc, int proc_no);
+    int     (*is_child)(struct MPROC* mproc, int proc_no);
     int     (*exec)(struct MPROC* mproc, int proc_no);
     int     (*wait)(struct MPROC** mproc, int opts);
     void    (*release)(struct MPROC* mproc);
