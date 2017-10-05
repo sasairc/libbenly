@@ -19,6 +19,13 @@ extern "C" {
 
 #include <unistd.h>
 
+#ifndef MPROC_MAX
+#define MPROC_MAX   32
+/* MPROC_MAX */
+#endif
+
+#define IS_PARENT(a,b) (a->procs == b)
+
 typedef struct PROC {
     pid_t   pid;
     int     argc;
@@ -32,13 +39,32 @@ typedef struct PROC {
 /* _GNU_SOURCE */
 #endif
     pid_t   (*fork)(struct PROC** proc);
-    int     (*wait)(struct PROC* proc, int opts);
+    pid_t   (*wait)(struct PROC** proc, int opts);
     int     (*exec)(struct PROC* proc);
     int     (*ready)(struct PROC* proc);
     void    (*release)(struct PROC* proc);
+    int     status;
 } PROC;
 
+typedef struct MPROC {
+    PROC*   proc[MPROC_MAX];
+    int     procs;
+    int     proc_no;
+    int     (*add)(struct MPROC** mproc, PROC* proc);
+    int     (*fork)(struct MPROC* mproc);
+#ifdef  _GNU_SOURCE
+    int     (*rfork)(struct MPROC* mproc, unsigned long flags);
+/* _GNU_SOURCE */
+#endif
+    int     (*is_parent)(struct MPROC* mproc, int proc_no);
+    int     (*is_child)(struct MPROC* mproc, int proc_no);
+    int     (*exec)(struct MPROC* mproc, int proc_no);
+    int     (*wait)(struct MPROC** mproc, int opts);
+    void    (*release)(struct MPROC* mproc);
+} MPROC;
+
 extern int init_proc(PROC** proc);
+extern int init_mproc(MPROC** mproc);
 extern int simple_exec(const char* cmd);
 
 #ifdef  __cplusplus

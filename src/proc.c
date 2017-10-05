@@ -22,7 +22,7 @@
 
 static int set_cmd_proc(PROC** proc, const char* cmd);
 static pid_t fork_proc(PROC** proc);
-static int wait_proc(PROC* proc, int opts);
+static pid_t wait_proc(PROC** proc, int opts);
 static int exec_proc(PROC* proc);
 static int exec_ready_proc(PROC* proc);
 static void release_proc(PROC* proc);
@@ -39,6 +39,18 @@ static void release_env_proc(PROC* proc);
 /* _GNU_SOURCE */
 #endif
 
+static int add_mproc(MPROC** mproc, PROC* proc);
+static int fork_mproc(MPROC* mproc);
+#ifdef  _GNU_SOURCE
+static int rfork_mproc(MPROC* mproc, unsigned long flags);
+/* _GNU_SOURCE */
+#endif
+static int is_parent_mproc(MPROC* mproc, int proc_no);
+static int is_child_mproc(MPROC* mproc, int proc_no);
+static int wait_mproc(MPROC** mproc, int opts);
+static int exec_mproc(MPROC* mproc, int proc_no);
+static void release_mproc(MPROC* mproc);
+
 int init_proc(PROC** proc)
 {
     PROC*   prc     = NULL;
@@ -47,6 +59,7 @@ int init_proc(PROC** proc)
                 malloc(sizeof(PROC))) == NULL) {
         return -1;
     } else {
+        prc->pid        = 0;
         prc->argc       = 0;
         prc->argv       = NULL;
         prc->envp       = NULL;
@@ -62,6 +75,7 @@ int init_proc(PROC** proc)
         prc->exec       = exec_proc;
         prc->ready      = exec_ready_proc;
         prc->release    = release_proc;
+        prc->status     = 0;
     }
     *proc = prc;
 
@@ -184,14 +198,12 @@ pid_t rfork_proc(PROC** proc, unsigned long flags)
 #endif
 
 static
-int wait_proc(PROC* proc, int opts)
+pid_t wait_proc(PROC** proc, int opts)
 {
-    int     status  = 0;
-
-    if (waitpid(proc->pid, &status, opts) < 0)
+    if (waitpid((*proc)->pid, &(*proc)->status, opts) < 0)
         return -1;
 
-    return status;
+    return (*proc)->pid;
 }
 
 #ifdef  _GNU_SOURCE
@@ -337,6 +349,126 @@ void release_argv_proc(PROC* proc)
         }
         free(proc->argv);
         proc->argv = NULL;
+    }
+
+    return;
+}
+
+int init_mproc(MPROC** mproc)
+{
+    MPROC*  mprc    = NULL;
+
+    if ((mprc = (MPROC*)
+                malloc(sizeof(MPROC))) == NULL) {
+        return -1;
+    } else {
+        mprc->procs     = 0;
+        mprc->proc_no   = 0;
+        mprc->add       = add_mproc;
+        mprc->fork      = fork_mproc;
+#ifdef  _GNU_SOURCE
+        mprc->rfork     = rfork_mproc;
+/* _GNU_SOURCE */
+#endif
+        mprc->is_parent = is_parent_mproc;
+        mprc->is_child  = is_child_mproc;
+        mprc->exec      = exec_mproc;
+        mprc->wait      = wait_mproc;
+        mprc->release   = release_mproc;
+    }
+    *mproc = mprc;
+
+    return 0;
+}
+
+static
+int add_mproc(MPROC** mproc, PROC* proc)
+{
+    if ((*mproc)->procs >= MPROC_MAX)
+        return -1;
+
+    (*mproc)->proc[(*mproc)->procs] = proc;
+    (*mproc)->procs++;
+
+    return 0;
+}
+
+static
+int fork_mproc(MPROC* mproc)
+{
+    int     proc_no = 0;
+
+    for (proc_no = 0;
+            proc_no < mproc->procs &&
+            (mproc->proc_no = mproc->proc[proc_no]->fork(&mproc->proc[proc_no])); proc_no++);
+
+    return proc_no;
+}
+
+#ifdef  _GNU_SOURCE
+static
+int rfork_mproc(MPROC* mproc, unsigned long flags)
+{
+    int     proc_no = 0;
+
+    for (proc_no = 0;
+            proc_no < mproc->procs &&
+            (mproc->proc_no = mproc->proc[proc_no]->rfork(&mproc->proc[proc_no], flags)); proc_no++);
+
+    return proc_no;
+}
+/* _GNU_SOURCE */
+#endif
+
+static
+int is_parent_mproc(MPROC* mproc, int proc_no)
+{
+    if (mproc->procs == proc_no)
+        return 1;
+
+    return 0;
+}
+
+static
+int is_child_mproc(MPROC* mproc, int proc_no)
+{
+    return !mproc->is_parent(mproc, proc_no);
+}
+
+static
+int exec_mproc(MPROC* mproc, int proc_no)
+{
+    return mproc->proc[proc_no]->exec(mproc->proc[proc_no]);
+}
+
+static
+int wait_mproc(MPROC** mproc, int opts)
+{
+    int     i   = 0;
+
+    while (i < (*mproc)->procs) {
+        (*mproc)->proc[i]->wait(&(*mproc)->proc[i], opts);
+        i++;
+    }
+
+    return 0;
+}
+
+static
+void release_mproc(MPROC* mproc)
+{
+    int     i   = 0;
+
+    if (mproc != NULL) {
+        while (i < mproc->procs) {
+            if (mproc->proc[i] != NULL) {
+                mproc->proc[i]->release(mproc->proc[i]);
+                mproc->proc[i] = NULL;
+                i++;
+            }
+        }
+        free(mproc);
+        mproc = NULL;
     }
 
     return;
