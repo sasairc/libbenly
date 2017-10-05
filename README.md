@@ -74,45 +74,89 @@ int main(void)
 
 #include <benly/proc.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
+#include <sys/wait.h>
 /* #include <linux/sched.h> */
 
 int main(void)
 {
-    PROC*   proc    = NULL;
+    PROC*   proc[MPROC_MAX];    /* MPROC_MAX 32 (default) */
 
-    int     n       = 12;
+    MPROC*  mproc   = NULL;
 
-    /* command line */
-    char*   cmd     = "date -d tomorrow";
+    int     n       = 0;
 
-    /* environment */
-    char*   utc[]   = {
-        "LANG=C", "TZ=UTC", NULL,
+    /* commands */
+    char*   cmd[]       = {
+        "date -d tomorrow",
+        "nocommand",
     };
+
+    /* environments */
     char*   fra[]   = {
-        "LANG=fr_FR.UTF-8", "TZ=Paris", NULL,
+        "LANG=fr_FR.UTF-8", "TZ=Europe/Paris", NULL,
+    };
+    char*   gbr[]   = {
+        "LANG=en_GB.UTF-8", "TZ=Europe/London", NULL,
+    };
+    char*   deu[]   = {
+        "LANG=de_DE.UTF-8", "TZ=Europe/Berlin", NULL,
+    };
+    char*   jpn[]   = {
+        "LANG=ja_JP.UTF-8", "TZ=Asia/Tokyo", NULL,
+    };
+    char*   ita[]   = {
+        "LANG=it_IT.UTF-8", "TZ=Europe/Rome", NULL,
+    };
+    char*   rus[]   = {
+        "LANG=ru_RU.UTF-8", "TZ=Europe/Moscow", NULL,
+    };
+    char**  tzs[]   = {
+        fra, gbr, deu, jpn, ita, rus, NULL,
     };
 
-    init_proc(&proc);
-    proc->set(&proc, cmd);
-    while (n > 0) {
-        if (!(n % 2))
-            proc->unset_env(&proc);
-        else if (!(n % 3))
-            proc->set_env(&proc, fra);
-        else
-            proc->set_env(&proc, utc);
-
-        switch (proc->rfork(&proc, SIGCHLD)) {
-            case    0:
-                proc->exec(proc);
-            default:
-                proc->wait(proc, 0);
-        }
-        n--;
+    /*
+     * date command
+     */
+    init_mproc(&mproc);
+    while (*(tzs + n) != NULL) {
+        init_proc(&proc[n]);
+        (*proc)->set_env(proc + n, *(tzs + n));
+        (*proc)->set(proc + n, *cmd);
+        mproc->add(&mproc, *(proc + n));
+        n++;
     }
-    proc->release(proc);
+
+    /*
+     * no command
+     */
+    init_proc(&proc[n]);
+    (*proc)->set(proc + n, *(cmd + 1));
+    mproc->add(&mproc, *(proc + n));
+
+    /*
+     * create child process
+     */
+    n = mproc->rfork(mproc, SIGCHLD);
+    if (mproc->is_parent(mproc, n)) {
+        sleep(1);
+        mproc->wait(&mproc, 0);
+    } else {
+        mproc->exec(mproc, n);
+        exit(1);
+    }
+
+    /*
+     * returns the exit status of the child
+     */
+    n = 0;
+    while (n < mproc->procs) {
+        fprintf(stdout, "proc_no = %d, exit status = %d\n",
+                n, WEXITSTATUS(mproc->proc[n]->status));
+        n++;
+    }
+    mproc->release(mproc);
 
     return 0;
 }
@@ -121,18 +165,19 @@ int main(void)
 ```shellsession
 % gcc example2.c -o example2 -lbenly_proc
 % ./example2
-2017年 10月  5日 木曜日 12:18:32 JST
-Thu Oct  5 03:18:32 UTC 2017
-2017年 10月  5日 木曜日 12:18:32 JST
-jeudi 5 octobre 2017, 03:18:32 (UTC+0000)
-2017年 10月  5日 木曜日 12:18:32 JST
-Thu Oct  5 03:18:32 UTC 2017
-2017年 10月  5日 木曜日 12:18:32 JST
-Thu Oct  5 03:18:32 UTC 2017
-2017年 10月  5日 木曜日 12:18:32 JST
-jeudi 5 octobre 2017, 03:18:32 (UTC+0000)
-2017年 10月  5日 木曜日 12:18:32 JST
-Thu Oct  5 03:18:32 UTC 2017
+Fri  6 Oct 07:54:35 BST 2017
+Fr 6. Okt 08:54:35 CEST 2017
+2017年 10月  6日 金曜日 15:54:35 JST
+vendredi 6 octobre 2017, 08:54:35 (UTC+0200)
+Пт окт  6 09:54:35 MSK 2017
+ven  6 ott 2017, 08.54.35, CEST
+proc_no = 0, exit status = 0
+proc_no = 1, exit status = 0
+proc_no = 2, exit status = 0
+proc_no = 3, exit status = 0
+proc_no = 4, exit status = 0
+proc_no = 5, exit status = 0
+proc_no = 6, exit status = 1
 ```
 
 ## Function List
@@ -219,6 +264,13 @@ void free2d(char** buf, int y);
 ```c
 #include <benly/proc.h>
 
+#ifndef MPROC_MAX
+#define MPROC_MAX   32
+/* MPROC_MAX */
+#endif
+
+#define IS_PARENT(a,b) (a->procs == b)
+
 typedef struct PROC {
     pid_t   pid;
     int     argc;
@@ -232,13 +284,32 @@ typedef struct PROC {
 /* _GNU_SOURCE */
 #endif
     pid_t   (*fork)(struct PROC** proc);
-    int     (*wait)(struct PROC* proc, int opts);
+    pid_t   (*wait)(struct PROC** proc, int opts);
     int     (*exec)(struct PROC* proc);
     int     (*ready)(struct PROC* proc);
     void    (*release)(struct PROC* proc);
+    int     status;
 } PROC;
 
+typedef struct MPROC {
+    PROC*   proc[MPROC_MAX];
+    int     procs;
+    int     proc_no;
+    int     (*add)(struct MPROC** mproc, PROC* proc);
+    int     (*fork)(struct MPROC* mproc);
+#ifdef  _GNU_SOURCE
+    int     (*rfork)(struct MPROC* mproc, unsigned long flags);
+/* _GNU_SOURCE */
+#endif
+    int     (*is_parent)(struct MPROC* mproc, int proc_no);
+    int     (*is_child)(struct MPROC* mproc, int proc_no);
+    int     (*exec)(struct MPROC* mproc, int proc_no);
+    int     (*wait)(struct MPROC** mproc, int opts);
+    void    (*release)(struct MPROC* mproc);
+} MPROC;
+
 int init_proc(PROC** proc);
+int init_mproc(MPROC** mproc);
 int simple_exec(const char* cmd);
 ```
 
