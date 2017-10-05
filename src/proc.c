@@ -22,7 +22,7 @@
 
 static int set_cmd_proc(PROC** proc, const char* cmd);
 static pid_t fork_proc(PROC** proc);
-static int wait_proc(PROC* proc, int opts);
+static pid_t wait_proc(PROC** proc, int opts);
 static int exec_proc(PROC* proc);
 static int exec_ready_proc(PROC* proc);
 static void release_proc(PROC* proc);
@@ -57,6 +57,7 @@ int init_proc(PROC** proc)
                 malloc(sizeof(PROC))) == NULL) {
         return -1;
     } else {
+        prc->pid        = 0;
         prc->argc       = 0;
         prc->argv       = NULL;
         prc->envp       = NULL;
@@ -72,6 +73,7 @@ int init_proc(PROC** proc)
         prc->exec       = exec_proc;
         prc->ready      = exec_ready_proc;
         prc->release    = release_proc;
+        prc->status     = 0;
     }
     *proc = prc;
 
@@ -194,14 +196,12 @@ pid_t rfork_proc(PROC** proc, unsigned long flags)
 #endif
 
 static
-int wait_proc(PROC* proc, int opts)
+pid_t wait_proc(PROC** proc, int opts)
 {
-    int     status  = 0;
-
-    if (waitpid(proc->pid, &status, opts) < 0)
+    if (waitpid((*proc)->pid, &(*proc)->status, opts) < 0)
         return -1;
 
-    return status;
+    return (*proc)->pid;
 }
 
 #ifdef  _GNU_SOURCE
@@ -361,6 +361,7 @@ int init_mproc(MPROC** mproc)
         return -1;
     } else {
         mprc->procs     = 0;
+        mprc->proc_no   = 0;
         mprc->add       = add_mproc;
         mprc->fork      = fork_mproc;
 #ifdef  _GNU_SOURCE
@@ -424,15 +425,14 @@ int exec_mproc(MPROC* mproc, int proc_no)
 static
 int wait_mproc(MPROC** mproc, int opts)
 {
-    int     i       = 0,
-            status  = 0;
+    int     i   = 0;
 
-    while (i < (*mproc)->procs && i < (*mproc)->procs) {
-        status += (*mproc)->proc[i]->wait((*mproc)->proc[i], opts);
+    while (i < (*mproc)->procs) {
+        (*mproc)->proc[i]->wait(&(*mproc)->proc[i], opts);
         i++;
     }
 
-    return status;
+    return 0;
 }
 
 static
@@ -476,4 +476,3 @@ char* mbstrtok(char* str, char* delimiter)
 
     return str;
 }
-
