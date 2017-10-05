@@ -16,7 +16,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <signal.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 
 #define SP  " "
 
@@ -25,6 +27,7 @@ static pid_t fork_proc(PROC** proc);
 static pid_t wait_proc(PROC** proc, int opts);
 static int exec_proc(PROC* proc);
 static int exec_ready_proc(PROC* proc);
+static int kill_proc(PROC* proc, int sig);
 static void release_proc(PROC* proc);
 static void release_argv_proc(PROC* proc);
 static char* mbstrtok(char* str, char* delimiter);
@@ -49,6 +52,8 @@ static int is_parent_mproc(MPROC* mproc, int proc_no);
 static int is_child_mproc(MPROC* mproc, int proc_no);
 static int wait_mproc(MPROC** mproc, int opts);
 static int exec_mproc(MPROC* mproc, int proc_no);
+static int kill_mproc(MPROC* mproc, int proc_no, int sig);
+static int killall_mproc(MPROC* mproc, int sig);
 static void release_mproc(MPROC* mproc);
 
 int init_proc(PROC** proc)
@@ -74,6 +79,7 @@ int init_proc(PROC** proc)
         prc->wait       = wait_proc;
         prc->exec       = exec_proc;
         prc->ready      = exec_ready_proc;
+        prc->kill       = kill_proc;
         prc->release    = release_proc;
         prc->status     = 0;
     }
@@ -319,6 +325,15 @@ int exec_ready_proc(PROC* proc)
 }
 
 static
+int kill_proc(PROC* proc, int sig)
+{
+    if (proc->pid < 0)
+        return -1;
+
+    return kill(proc->pid, sig);
+}
+
+static
 void release_proc(PROC* proc)
 {
     if (proc != NULL) {
@@ -374,6 +389,8 @@ int init_mproc(MPROC** mproc)
         mprc->is_child  = is_child_mproc;
         mprc->exec      = exec_mproc;
         mprc->wait      = wait_mproc;
+        mprc->kill      = kill_mproc;
+        mprc->killall   = killall_mproc;
         mprc->release   = release_mproc;
     }
     *mproc = mprc;
@@ -448,6 +465,29 @@ int wait_mproc(MPROC** mproc, int opts)
 
     while (i < (*mproc)->procs) {
         (*mproc)->proc[i]->wait(&(*mproc)->proc[i], opts);
+        i++;
+    }
+
+    return 0;
+}
+
+static
+int kill_mproc(MPROC* mproc, int proc_no, int sig)
+{
+    if (proc_no >= mproc->procs)
+        return -1;
+
+    return mproc->proc[proc_no]->kill(mproc->proc[proc_no], sig);
+}
+
+static
+int killall_mproc(MPROC* mproc, int sig)
+{
+    int     i   = 0;
+
+    while (i < mproc->procs) {
+        if ((mproc->proc[i]->kill(mproc->proc[i], sig)) < 0)
+            return -1;
         i++;
     }
 

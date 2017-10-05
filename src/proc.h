@@ -42,6 +42,7 @@ typedef struct PROC {
     pid_t   (*wait)(struct PROC** proc, int opts);
     int     (*exec)(struct PROC* proc);
     int     (*ready)(struct PROC* proc);
+    int     (*kill)(struct PROC* proc, int sig);
     void    (*release)(struct PROC* proc);
     int     status;
 } PROC;
@@ -60,6 +61,8 @@ typedef struct MPROC {
     int     (*is_child)(struct MPROC* mproc, int proc_no);
     int     (*exec)(struct MPROC* mproc, int proc_no);
     int     (*wait)(struct MPROC** mproc, int opts);
+    int     (*kill)(struct MPROC* mproc, int proc_no, int sig);
+    int     (*killall)(struct MPROC* mproc, int sig);
     void    (*release)(struct MPROC* mproc);
 } MPROC;
 
