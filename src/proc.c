@@ -168,7 +168,6 @@ int set_cmd_proc(PROC** proc, const char* cmd)
         tok = mbstrtok(NULL, SP);
     }
     *((*proc)->argv + (*proc)->argc) = NULL;
-    fprintf(stdout, "argc = %d\n", (*proc)->argc);
 
     return 0;
 
