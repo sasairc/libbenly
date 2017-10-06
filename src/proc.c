@@ -23,6 +23,7 @@
 #define SP  " "
 
 static int set_cmd_proc(PROC** proc, const char* cmd);
+static int set_cmd_argv_proc(PROC** proc, char* const argv[]);
 static pid_t fork_proc(PROC** proc);
 static pid_t wait_proc(PROC** proc, int opts);
 static int exec_proc(PROC* proc);
@@ -69,6 +70,7 @@ int init_proc(PROC** proc)
         prc->argv       = NULL;
         prc->envp       = NULL;
         prc->set        = set_cmd_proc;
+        prc->setv       = set_cmd_argv_proc;
 #ifdef  _GNU_SOURCE
         prc->set_env    = set_env_proc;
         prc->unset_env  = unset_env_proc;
@@ -164,6 +166,57 @@ int set_cmd_proc(PROC** proc, const char* cmd)
             (*proc)->argc++;
         }
         tok = mbstrtok(NULL, SP);
+    }
+    *((*proc)->argv + (*proc)->argc) = NULL;
+    fprintf(stdout, "argc = %d\n", (*proc)->argc);
+
+    return 0;
+
+ERR:
+    switch (status) {
+        case    -1:
+        case    -2:
+            break;
+        case    -3:
+            release_argv_proc(*proc);
+            (*proc)->argc = 0;
+            (*proc)->argv = NULL;
+            break;
+    }
+
+    return status;
+}
+
+static
+int set_cmd_argv_proc(PROC** proc, char* const argv[])
+{
+    int     i       = 0,
+            status  = 0;
+
+    size_t  len     = 0;
+
+    if ((*proc)->argv != NULL) {
+        release_argv_proc(*proc);
+        (*proc)->argc = 0;
+        (*proc)->argv = NULL;
+    }
+
+    while (*(argv + (*proc)->argc) != NULL)
+        (*proc)->argc++;
+
+    if (((*proc)->argv = (char**)
+            malloc(sizeof(char*) * ((*proc)->argc + 1))) == NULL) {
+        status = -1; goto ERR;
+    }
+    while (i < (*proc)->argc) {
+        len = strlen(*(argv + i));
+        if ((*((*proc)->argv + i) = (char*)
+                    malloc(sizeof(char) * (len + 1))) == NULL) {
+            status = -2; goto ERR;
+        }
+        memcpy(*((*proc)->argv + i), *(argv + i), len);
+        *(*((*proc)->argv + i) + len) = '\0';
+        i++;
     }
     *((*proc)->argv + (*proc)->argc) = NULL;
 
