@@ -44,6 +44,7 @@ static void release_env_proc(PROC* proc);
 #endif
 
 static int add_mproc(MPROC** mproc, PROC* proc);
+static int del_mproc(MPROC** mproc, int proc_no);
 static int fork_mproc(MPROC* mproc);
 #ifdef  _GNU_SOURCE
 static int rfork_mproc(MPROC* mproc, unsigned long flags);
@@ -432,6 +433,7 @@ int init_mproc(MPROC** mproc)
         mprc->procs     = 0;
         mprc->proc_no   = 0;
         mprc->add       = add_mproc;
+        mprc->del       = del_mproc;
         mprc->fork      = fork_mproc;
 #ifdef  _GNU_SOURCE
         mprc->rfork     = rfork_mproc;
@@ -458,6 +460,20 @@ int add_mproc(MPROC** mproc, PROC* proc)
 
     (*mproc)->proc[(*mproc)->procs] = proc;
     (*mproc)->procs++;
+
+    return 0;
+}
+
+static
+int del_mproc(MPROC** mproc, int proc_no)
+{
+    if ((*mproc)->procs <= 0)
+        return -1;
+
+    while (proc_no < (*mproc)->procs &&
+            ((*mproc)->proc[proc_no] = (*mproc)->proc[proc_no + 1]))
+        proc_no++;
+    (*mproc)->procs--;
 
     return 0;
 }
