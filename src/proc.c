@@ -424,12 +424,24 @@ void release_argv_proc(PROC* proc)
 
 int init_mproc(MPROC** mproc)
 {
+    int     i       = 0,
+            status  = 0;
+
     MPROC*  mprc    = NULL;
 
     if ((mprc = (MPROC*)
                 malloc(sizeof(MPROC))) == NULL) {
-        return -1;
+        status = -1; goto ERR;
+    }
+    if ((mprc->proc = (PROC**)
+                malloc(sizeof(PROC*) * MPROC_MAX)) == NULL) {
+        status = -2; goto ERR;
     } else {
+        i = 0;
+        while (i < MPROC_MAX && (mprc->proc[i] = NULL))
+            i++;
+    }
+    {
         mprc->procs     = 0;
         mprc->proc_no   = 0;
         mprc->add       = add_mproc;
@@ -450,6 +462,18 @@ int init_mproc(MPROC** mproc)
     *mproc = mprc;
 
     return 0;
+
+ERR:
+    switch (status) {
+        case    -1:
+            break;
+        case    -2:
+            if (mprc != NULL)
+                free(mprc);
+            break;
+    }
+
+    return status;
 }
 
 static
@@ -460,6 +484,7 @@ int add_mproc(MPROC** mproc, PROC* proc)
 
     (*mproc)->proc[(*mproc)->procs] = proc;
     (*mproc)->procs++;
+    (*mproc)->proc[(*mproc)->procs] = NULL;
 
     return 0;
 }
@@ -467,13 +492,15 @@ int add_mproc(MPROC** mproc, PROC* proc)
 static
 int del_mproc(MPROC** mproc, int proc_no)
 {
-    if ((*mproc)->procs <= 0)
+    if ((*mproc)->procs <= 1 ||
+            (*mproc)->proc[proc_no] == NULL)
         return -1;
 
     while (proc_no < (*mproc)->procs &&
             ((*mproc)->proc[proc_no] = (*mproc)->proc[proc_no + 1]))
         proc_no++;
     (*mproc)->procs--;
+    (*mproc)->proc[(*mproc)->procs] = NULL;
 
     return 0;
 }
@@ -568,12 +595,16 @@ void release_mproc(MPROC* mproc)
     int     i   = 0;
 
     if (mproc != NULL) {
-        while (i < mproc->procs) {
-            if (mproc->proc[i] != NULL) {
-                mproc->proc[i]->release(mproc->proc[i]);
-                mproc->proc[i] = NULL;
-                i++;
+        if (mproc->proc != NULL) {
+            while (i < mproc->procs) {
+                if (mproc->proc[i] != NULL) {
+                    mproc->proc[i]->release(mproc->proc[i]);
+                    mproc->proc[i] = NULL;
+                    i++;
+                }
             }
+            free(mproc->proc);
+            mproc->proc = NULL;
         }
         free(mproc);
         mproc = NULL;

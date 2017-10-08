@@ -49,7 +49,7 @@ typedef struct PROC {
 } PROC;
 
 typedef struct MPROC {
-    PROC*   proc[MPROC_MAX];
+    PROC**  proc;
     int     procs;
     int     proc_no;
     int     (*add)(struct MPROC** mproc, PROC* proc);

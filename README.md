@@ -294,10 +294,11 @@ typedef struct PROC {
 } PROC;
 
 typedef struct MPROC {
-    PROC*   proc[MPROC_MAX];
+    PROC**  proc;
     int     procs;
     int     proc_no;
     int     (*add)(struct MPROC** mproc, PROC* proc);
+    int     (*del)(struct MPROC** mproc, int proc_no);
     int     (*fork)(struct MPROC* mproc);
 #ifdef  _GNU_SOURCE
     int     (*rfork)(struct MPROC* mproc, unsigned long flags);
