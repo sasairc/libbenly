@@ -77,7 +77,7 @@ int put_shash(SHASH** shash, const char* key, const char* value)
             pos     = 0;
 
     if ((pos = key_exists_shash(*shash, key)) < 0) {
-        if ((*shash)->size <= (*shash)->elemc) {
+        if ((*shash)->size <= (size_t)(*shash)->elemc) {
             if (reallocate_elem(shash) < 0) {
                 status = -1; goto ERR;
             }
@@ -253,8 +253,9 @@ void remove_value_elem(SHASH* shash, int pos)
 static
 int allocate_elem(SHASH** shash)
 {
-    int     i       = 0,
-            status  = 0;
+    int     status  = 0;
+
+    size_t  i       = 0;
 
     if (((*shash)->elem = (char***)
                 malloc(sizeof(char**) * (*shash)->size)) == NULL) {
@@ -278,13 +279,12 @@ ERR:
             break;
         case    -2:
             if ((*shash)->elem != NULL) {
-                i--;
-                while (i >= 0) {
-                    if (*((*shash)->elem + i) != NULL) {
+                i = 0;
+                while (i < (*shash)->size &&
+                        *((*shash)->elem + i) != NULL) {
                         free(*((*shash)->elem + i));
                         *((*shash)->elem + i) = NULL;
-                    }
-                    i--;
+                    i++;
                 }
                 free((*shash)->elem);
                 (*shash)->elem = NULL;
@@ -298,8 +298,9 @@ ERR:
 static
 int reallocate_elem(SHASH** shash)
 {
-    int     i       = 0,
-            status  = 0;
+    int     status  = 0;
+
+    size_t  i       = 0;
 
     (*shash)->size += DEFAULT_ELEM_SIZE;
     if (((*shash)->elem = (char***)
@@ -325,13 +326,11 @@ ERR:
             break;
         case    -2:
             if ((*shash)->elem != NULL) {
-                i--;
-                while (i >= 0) {
-                    if (*((*shash)->elem + i) != NULL) {
+                while (i < (*shash)->size &&
+                        *((*shash)->elem + i) != NULL) {
                         free(*((*shash)->elem + i));
                         *((*shash)->elem + i) = NULL;
-                    }
-                    i--;
+                    i++;
                 }
                 free((*shash)->elem);
                 (*shash)->elem = NULL;
