@@ -249,6 +249,30 @@ int file_is_binary(FILE* fp);
 int watch_fd(int fd, long timeout);
 ```
 
+### hash.h
+
+```c
+#include <benly/hash.h>
+
+#ifndef DEFAULT_ELEM_SIZE
+#define DEFAULT_ELEM_SIZE   32
+/* DEFAULT_ELEM_SIZE */
+#endif
+
+typedef struct SHASH {
+    int     elemc;
+    char*** elem;
+    int     (*put)(struct SHASH** shash, const char* key, const char* value);
+    char*   (*get)(struct SHASH* shash, const char* key);
+    int     (*exists)(struct SHASH* shash, const char* key);
+    void    (*remove)(struct SHASH** shash, const char* key);
+    void    (*release)(struct SHASH* shash);
+    size_t  size;
+} SHASH;
+
+int init_shash(SHASH** shash);
+```
+
 ### memory.h
 
 ```c
