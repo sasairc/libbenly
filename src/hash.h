@@ -29,10 +29,12 @@ typedef struct SHASH {
     char*** elem;
     int     (*put)(struct SHASH** shash, const char* key, const char* value);
     char*   (*get)(struct SHASH* shash, const char* key);
+    int     (*empty)(struct SHASH* shash);
     int     (*exists)(struct SHASH* shash, const char* key);
     void    (*remove)(struct SHASH** shash, const char* key);
+    void    (*clear)(struct SHASH** shash);
     void    (*release)(struct SHASH* shash);
-    size_t  size;
+    size_t  size;   /* realloc(): size += DEFAULT_ELEM_SIZE */
 } SHASH;
 
 extern int init_shash(SHASH** shash);

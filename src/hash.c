@@ -17,8 +17,10 @@
 
 static int put_shash(SHASH** shash, const char* key, const char* value);
 static char* get_shash(SHASH* shash, const char* key);
+static int empty_shash(SHASH* shash);
 static int key_exists_shash(SHASH* shash, const char* key);
 static void remove_shash(SHASH** shash, const char* key);
+static void clear_shash(SHASH** shash);
 static void release_shash(SHASH* shash);
 
 static int put_key_elem(SHASH** shash, const char* key, int pos);
@@ -43,8 +45,10 @@ int init_shash(SHASH** shash)
         shs->elemc      = 0;
         shs->put        = put_shash;
         shs->get        = get_shash;
+        shs->empty      = empty_shash;
         shs->exists     = key_exists_shash;
         shs->remove     = remove_shash;
+        shs->clear      = clear_shash;
         shs->release    = release_shash;
         shs->size       = DEFAULT_ELEM_SIZE;
     }
@@ -131,6 +135,12 @@ char* get_shash(SHASH* shash, const char* key)
 }
 
 static
+int empty_shash(SHASH* shash)
+{
+    return !(shash->elemc | 0);
+}
+
+static
 int key_exists_shash(SHASH* shash, const char* key)
 {
     int     i       = 0,
@@ -152,11 +162,13 @@ int key_exists_shash(SHASH* shash, const char* key)
 static
 void release_shash(SHASH* shash)
 {
-    int     i        = 0;
+    int     i       = 0,
+            j       = 0;
 
     if (shash != NULL) {
         if (shash->elem != NULL) {
-            while (i < shash->elemc) {
+            j = shash->elemc - 1;
+            while (i < shash->elemc && i <= j) {
                 if (*(shash->elem + i) != NULL) {
                     remove_key_elem(shash, i);
                     *(*(shash->elem + i)) = NULL;
@@ -165,7 +177,16 @@ void release_shash(SHASH* shash)
                     free(*(shash->elem + i));
                     *(shash->elem + i) = NULL;
                 }
+                if (*(shash->elem + j) != NULL) {
+                    remove_key_elem(shash, j);
+                    *(*(shash->elem + j)) = NULL;
+                    remove_value_elem(shash, j);
+                    *(*(shash->elem + j) + 1) = NULL;
+                    free(*(shash->elem + j));
+                    *(shash->elem + j) = NULL;
+                }
                 i++;
+                j--;
             }
             free(shash->elem);
             shash->elem = NULL;
@@ -173,6 +194,34 @@ void release_shash(SHASH* shash)
         free(shash);
         shash = NULL;
     }
+
+    return;
+}
+
+static
+void clear_shash(SHASH** shash)
+{
+    int     i       = 0,
+            j       = 0;
+
+    j = (*shash)->elemc - 1;
+    while (i < (*shash)->elemc && i <= j) {
+        if (*((*shash)->elem + i) != NULL) {
+            remove_key_elem(*shash, i);
+            remove_value_elem(*shash, i);
+            free(*((*shash)->elem + i));
+            *((*shash)->elem + i) = NULL;
+        }
+        if (*((*shash)->elem + j) != NULL) {
+            remove_key_elem(*shash, j);
+            remove_value_elem(*shash, j);
+            free(*((*shash)->elem + j));
+            *((*shash)->elem + j) = NULL;
+        }
+        i++;
+        j--;
+    }
+    (*shash)->elemc = 0;
 
     return;
 }
