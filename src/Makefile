@@ -23,6 +23,7 @@ endif
 OBJS         = libbenly_cmd.$(SUFFIX)    \
                libbenly_env.$(SUFFIX)    \
                libbenly_file.$(SUFFIX)   \
+               libbenly_hash.$(SUFFIX)   \
                libbenly_memory.$(SUFFIX) \
                libbenly_proc.$(SUFFIX)   \
                libbenly_signal.$(SUFFIX) \
@@ -89,6 +90,17 @@ else
 	$(CC) $(LDFLAGS) file.o -o $@ $(DEFLDFLAGS)
 endif
 
+libbenly_hash.$(SUFFIX): hash.c hash.h
+ifeq ($(CMDLINE), 0)
+	@echo "  CC      hash.o"
+	@$(CC) $(CFLAGS) -c $< -o hash.o $(DEFCFLAGS)
+	@echo "  CCLD    $@"
+	@$(CC) $(LDFLAGS) hash.o -o $@ $(DEFLDFLAGS)
+else
+	$(CC) $(CFLAGS) -c $< -o hash.o $(DEFCFLAGS)
+	$(CC) $(LDFLAGS) hash.o -o $@ $(DEFLDFLAGS)
+endif
+
 libbenly_memory.$(SUFFIX): memory.c memory.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      memory.o"
@@ -144,6 +156,9 @@ install-lib: $(OBJS)
 	install -pm 755 libbenly_file.$(SUFFIX) $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_file.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_file.$(SUFFIX)
+	install -pm 755 libbenly_hash.$(SUFFIX) $(LIBDIR)/libbenly_hash.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_hash.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_hash.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_hash.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_hash.$(SUFFIX)
 	install -pm 755 libbenly_memory.$(SUFFIX) $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_memory.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_memory.$(SUFFIX)
@@ -160,6 +175,7 @@ ifeq ($(shell uname), Darwin)
 	install_name_tool -change "libbenly_cmd.dylib" "$(LIBDIR)/libbenly_cmd.dylib" $(LIBDIR)/libbenly_cmd.dylib
 	install_name_tool -change "libbenly_env.dylib" "$(LIBDIR)/libbenly_env.dylib" $(LIBDIR)/libbenly_env.dylib
 	install_name_tool -change "libbenly_file.dylib" "$(LIBDIR)/libbenly_file.dylib" $(LIBDIR)/libbenly_file.dylib
+	install_name_tool -change "libbenly_hash.dylib" "$(LIBDIR)/libbenly_hash.dylib" $(LIBDIR)/libbenly_hash.dylib
 	install_name_tool -change "libbenly_memory.dylib" "$(LIBDIR)/libbenly_memory.dylib" $(LIBDIR)/libbenly_memory.dylib
 	install_name_tool -change "libbenly_proc.dylib" "$(LIBDIR)/libbenly_proc.dylib" $(LIBDIR)/libbenly_proc.dylib
 	install_name_tool -change "libbenly_signal.dylib" "$(LIBDIR)/libbenly_signal.dylib" $(LIBDIR)/libbenly_signal.dylib
