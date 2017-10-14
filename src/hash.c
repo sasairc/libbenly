@@ -17,7 +17,9 @@
 
 static int put_shash(SHASH** shash, const char* key, const char* value);
 static char* get_shash(SHASH* shash, const char* key);
-static int empty_shash(SHASH* shash);
+static int getv_shash(SHASH* shash, const char* key, char** ptr);
+static int is_empty_shash(SHASH* shash);
+static int size_shash(SHASH* shash);
 static int key_exists_shash(SHASH* shash, const char* key);
 static void remove_shash(SHASH** shash, const char* key);
 static void clear_shash(SHASH** shash);
@@ -45,12 +47,14 @@ int init_shash(SHASH** shash)
         shs->elemc      = 0;
         shs->put        = put_shash;
         shs->get        = get_shash;
-        shs->empty      = empty_shash;
+        shs->getv       = getv_shash;
+        shs->is_empty   = is_empty_shash;
+        shs->size       = size_shash;
         shs->exists     = key_exists_shash;
         shs->remove     = remove_shash;
         shs->clear      = clear_shash;
         shs->release    = release_shash;
-        shs->size       = DEFAULT_ELEM_SIZE;
+        shs->elem_size  = DEFAULT_ELEM_SIZE;
     }
     if (allocate_elem(&shs) < 0) {
         status = -2; goto ERR;
@@ -74,23 +78,35 @@ ERR:
     return status;
 }
 
+SHASH* new_shash(void)
+{
+    SHASH*  shash   = NULL;
+
+    init_shash(&shash);
+
+    return shash;
+}
+
 static
 int put_shash(SHASH** shash, const char* key, const char* value)
 {
     int     status  = 0,
             pos     = 0;
 
-    if ((pos = key_exists_shash(*shash, key)) < 0) {
-        if ((*shash)->size <= (size_t)(*shash)->elemc) {
+    if (key == NULL || value == NULL)
+        return -1;
+
+    if ((pos = (*shash)->exists(*shash, key)) < 0) {
+        if ((*shash)->elem_size <= (size_t)(*shash)->elemc) {
             if (reallocate_elem(shash) < 0) {
-                status = -1; goto ERR;
+                status = -2; goto ERR;
             }
         }
         if (put_key_elem(shash, key, (*shash)->elemc) < 0) {
-            status = -2; goto ERR;
+            status = -3; goto ERR;
         }
         if (put_value_elem(shash, value, (*shash)->elemc) < 0) {
-            status = -3; goto ERR;
+            status = -4; goto ERR;
         }
         (*shash)->elemc++;
     } else {
@@ -99,7 +115,7 @@ int put_shash(SHASH** shash, const char* key, const char* value)
             *(*((*shash)->elem + pos) + 1) = NULL;
         }
         if (put_value_elem(shash, value, pos) < 0) {
-            status = -4; goto ERR;
+            status = -5; goto ERR;
         }
     }
 
@@ -109,12 +125,13 @@ ERR:
     switch (status) {
         case    -1:
         case    -2:
-            break;
         case    -3:
+            break;
+        case    -4:
             remove_key_elem(*shash, (*shash)->elemc);
             *(*((*shash)->elem + (*shash)->elemc)) = NULL;
             break;
-        case    -4:
+        case    -5:
             remove_key_elem(*shash, pos);
             *(*((*shash)->elem + pos)) = NULL;
             break;
@@ -135,9 +152,35 @@ char* get_shash(SHASH* shash, const char* key)
 }
 
 static
-int empty_shash(SHASH* shash)
+int getv_shash(SHASH* shash, const char* key, char** ptr)
+{
+    size_t  len     = 0;
+
+    char*   value   = NULL;
+
+    if ((value = shash->get(shash, key)) == NULL)
+        return -1;
+
+    len = strlen(value);
+    if ((*ptr = (char*)
+                malloc(sizeof(char) * (len + 1))) == NULL)
+        return -2;
+    memcpy(*ptr, value, len);
+    *(*(ptr) + len) = '\0';
+
+    return 0;
+}
+
+static
+int is_empty_shash(SHASH* shash)
 {
     return !(shash->elemc | 0);
+}
+
+static
+int size_shash(SHASH* shash)
+{
+    return shash->elemc;
 }
 
 static
@@ -147,7 +190,7 @@ int key_exists_shash(SHASH* shash, const char* key)
             j       = 0;
 
     j = shash->elemc - 1;
-    while (i < shash->elemc) {
+    while (i < shash->elemc && i <= j) {
         if (strcmp_lite(*(*(shash->elem + i)), key) == 0)
             return i;
         if (strcmp_lite(*(*(shash->elem + j)), key) == 0)
@@ -307,10 +350,10 @@ int allocate_elem(SHASH** shash)
     size_t  i       = 0;
 
     if (((*shash)->elem = (char***)
-                malloc(sizeof(char**) * (*shash)->size)) == NULL) {
+                malloc(sizeof(char**) * (*shash)->elem_size)) == NULL) {
         status = -1; goto ERR;
     }
-    while (i < (*shash)->size) {
+    while (i < (*shash)->elem_size) {
         if ((*((*shash)->elem + i) = (char**)
                 malloc(sizeof(char*) * 2)) == NULL) {
             status = -2; goto ERR;
@@ -329,7 +372,7 @@ ERR:
         case    -2:
             if ((*shash)->elem != NULL) {
                 i = 0;
-                while (i < (*shash)->size &&
+                while (i < (*shash)->elem_size &&
                         *((*shash)->elem + i) != NULL) {
                         free(*((*shash)->elem + i));
                         *((*shash)->elem + i) = NULL;
@@ -351,13 +394,13 @@ int reallocate_elem(SHASH** shash)
 
     size_t  i       = 0;
 
-    (*shash)->size += DEFAULT_ELEM_SIZE;
+    (*shash)->elem_size += DEFAULT_ELEM_SIZE;
     if (((*shash)->elem = (char***)
-                realloc((*shash)->elem, sizeof(char**) * (*shash)->size)) == NULL) {
+                realloc((*shash)->elem, sizeof(char**) * (*shash)->elem_size)) == NULL) {
         status = -1; goto ERR;
     }
     i = (*shash)->elemc;
-    while (i < (*shash)->size) {
+    while (i < (*shash)->elem_size) {
         if ((*((*shash)->elem + i) = (char**)
                 malloc(sizeof(char*) * 2)) == NULL) {
             status = -2; goto ERR;
@@ -375,7 +418,7 @@ ERR:
             break;
         case    -2:
             if ((*shash)->elem != NULL) {
-                while (i < (*shash)->size &&
+                while (i < (*shash)->elem_size &&
                         *((*shash)->elem + i) != NULL) {
                         free(*((*shash)->elem + i));
                         *((*shash)->elem + i) = NULL;

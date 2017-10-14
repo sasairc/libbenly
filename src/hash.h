@@ -29,15 +29,18 @@ typedef struct SHASH {
     char*** elem;
     int     (*put)(struct SHASH** shash, const char* key, const char* value);
     char*   (*get)(struct SHASH* shash, const char* key);
-    int     (*empty)(struct SHASH* shash);
+    int     (*getv)(struct SHASH* shash, const char* key, char** ptr);
+    int     (*is_empty)(struct SHASH* shash);
+    int     (*size)(struct SHASH* shash);
     int     (*exists)(struct SHASH* shash, const char* key);
     void    (*remove)(struct SHASH** shash, const char* key);
     void    (*clear)(struct SHASH** shash);
     void    (*release)(struct SHASH* shash);
-    size_t  size;   /* realloc(): size += DEFAULT_ELEM_SIZE */
+    size_t  elem_size;  /* realloc(): size += DEFAULT_ELEM_SIZE */
 } SHASH;
 
 extern int init_shash(SHASH** shash);
+extern SHASH* new_shash(void);
 
 #ifdef  __cplusplus
 }
