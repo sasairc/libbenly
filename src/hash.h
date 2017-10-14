@@ -36,7 +36,7 @@ typedef struct SHASH {
     void    (*remove)(struct SHASH** shash, const char* key);
     void    (*clear)(struct SHASH** shash);
     void    (*release)(struct SHASH* shash);
-    size_t  elem_size;  /* realloc(): size += DEFAULT_ELEM_SIZE */
+    size_t  elem_size;  /* realloc(): elem_size += DEFAULT_ELEM_SIZE */
 } SHASH;
 
 extern int init_shash(SHASH** shash);
