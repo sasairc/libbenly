@@ -380,6 +380,7 @@ ERR:
                 }
                 free((*shash)->elem);
                 (*shash)->elem = NULL;
+                (*shash)->elemc = 0;
             }
             break;
     }
@@ -418,6 +419,7 @@ ERR:
             break;
         case    -2:
             if ((*shash)->elem != NULL) {
+                i = 0;
                 while (i < (*shash)->elem_size &&
                         *((*shash)->elem + i) != NULL) {
                         free(*((*shash)->elem + i));
@@ -426,6 +428,7 @@ ERR:
                 }
                 free((*shash)->elem);
                 (*shash)->elem = NULL;
+                (*shash)->elemc = 0;
             }
             break;
     }
