@@ -30,6 +30,8 @@ typedef struct SHASH {
     int     (*put)(struct SHASH** shash, const char* key, const char* value);
     char*   (*get)(struct SHASH* shash, const char* key);
     int     (*getv)(struct SHASH* shash, const char* key, char** ptr);
+    char**  (*keys)(struct SHASH* shash);
+    char**  (*values)(struct SHASH* shash);
     int     (*is_empty)(struct SHASH* shash);
     int     (*size)(struct SHASH* shash);
     int     (*exists)(struct SHASH* shash, const char* key);
@@ -41,6 +43,7 @@ typedef struct SHASH {
 
 extern int init_shash(SHASH** shash);
 extern SHASH* new_shash(void);
+extern SHASH* clone_shash(SHASH* shash);
 
 #ifdef  __cplusplus
 }

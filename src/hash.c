@@ -18,6 +18,8 @@
 static int put_shash(SHASH** shash, const char* key, const char* value);
 static char* get_shash(SHASH* shash, const char* key);
 static int getv_shash(SHASH* shash, const char* key, char** ptr);
+static char** keys_shash(SHASH* shash);
+static char** values_shash(SHASH* shash);
 static int is_empty_shash(SHASH* shash);
 static int size_shash(SHASH* shash);
 static int key_exists_shash(SHASH* shash, const char* key);
@@ -48,6 +50,8 @@ int init_shash(SHASH** shash)
         shs->put        = put_shash;
         shs->get        = get_shash;
         shs->getv       = getv_shash;
+        shs->keys       = keys_shash;
+        shs->values     = values_shash;
         shs->is_empty   = is_empty_shash;
         shs->size       = size_shash;
         shs->exists     = key_exists_shash;
@@ -85,6 +89,29 @@ SHASH* new_shash(void)
     init_shash(&shash);
 
     return shash;
+}
+
+SHASH* clone_shash(SHASH* shash)
+{
+    int     i       = 0;
+
+    SHASH*  shs     = NULL;
+
+    if (init_shash(&shs) < 0)
+        return NULL;
+
+    while (i < shash->size(shash)) {
+        if (shs->put(&shs, *(*(shash->elem + i)), *(*(shash->elem + i) + 1)) < 0)
+            goto ERR;
+        i++;
+    }
+
+    return shs;
+
+ERR:
+    shs->release(shs);
+
+    return NULL;
 }
 
 static
@@ -169,6 +196,42 @@ int getv_shash(SHASH* shash, const char* key, char** ptr)
     *(*(ptr) + len) = '\0';
 
     return 0;
+}
+
+static
+char** keys_shash(SHASH* shash)
+{
+    int     i       = 0;
+
+    char**  keys    = NULL;
+
+    if ((keys = (char**)
+                malloc(sizeof(char*) * shash->size(shash))) != NULL) {
+        while (i < shash->size(shash) &&
+                (*(keys + i) = *(*(shash->elem + i))))
+            i++;
+        *(keys + i) = NULL;
+    }
+
+    return keys;
+}
+
+static
+char** values_shash(SHASH* shash)
+{
+    int     i       = 0;
+
+    char**  values  = NULL;
+
+    if ((values = (char**)
+                malloc(sizeof(char*) * shash->size(shash))) != NULL) {
+        while (i < shash->size(shash) &&
+                (*(values + i) = *(*(shash->elem + i) + 1)))
+            i++;
+        *(values + i) = NULL;
+    }
+
+    return values;
 }
 
 static
