@@ -19,156 +19,123 @@
 #include <sys/time.h>
 #include <sys/select.h>
 
-int p_count_file_lines(char** buf)
+int count_file_lines(FILE* fp)
 {
-    if (buf == NULL)
-        return -1;
+    int     c       = 0;
 
-    int     i   = 0;
+    size_t  y       = 0;
 
-    while (*(buf + i) != NULL)
-        i++;
+    rewind(fp);
+    while ((c = fgetc(fp)) != EOF) {
+        if (c == '\n')
+            y++;
+    }
 
-    return i;
+    return y;
 }
 
-int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp)
+int load_file_to_array(char*** dest, size_t th_x, size_t th_y, FILE* fp)
 {
-    if (t_lines <= 0 || t_length <= 0 || fp == NULL)
-        return -1;
-
     int     c       = 0,
             status  = 0;
 
     size_t  x       = 0,
-            y       = 0,
-            lines   = t_lines,
-            length  = t_length,
-            tmplen  = 0;
+            y       = 0;
 
-    char*   str     = NULL,
+    char*   tmp     = NULL,
         **  buf     = NULL;
 
-    if ((str = (char*)
-                malloc(sizeof(char) * t_length)) == NULL)
-        return -1;
-
+    if ((tmp = (char*)
+                malloc(sizeof(char) * th_x)) == NULL) {
+        status = -1; goto ERR;
+    } else {
+        memset(tmp, '\0', th_x);
+    }
     if ((buf = (char**)
-                malloc(sizeof(char*) * t_lines)) == NULL) {
+                malloc(sizeof(char*) * th_y)) == NULL) {
         status = -2; goto ERR;
     }
-
-    while ((c = fgetc(fp)) != EOF) {
+    while (1) {
+        c = fgetc(fp);
         switch (c) {
             case    '\n':
-                if (chomp > 0)
-                    *(str + x) = '\0';
-                else
-                    *(str + x) = c;
-
-                tmplen = strlen(str);
-                /* reallocate array of Y coordinate */
-                if (y == (lines - 1)) {
-                    lines += t_lines;
+            case    EOF:
+                /* no data */
+                if (c == EOF && x == 0 && y == 0) {
+                    if (tmp != NULL) {
+                        free(tmp);
+                        tmp = NULL;
+                    }
+                    if (buf != NULL) {
+                        free(buf);
+                        buf = NULL;
+                    }
+                    return 0;
+                }
+                if (y >= th_y) {
+                    th_y += th_y;
                     if ((buf = (char**)
-                                realloc(buf, sizeof(char*) * lines)) == NULL) {
+                                realloc(buf, sizeof(char*) * th_y)) == NULL) {
                         status = -3; goto ERR;
                     }
                 }
-                /* allocate array for X coordinate */
                 if ((*(buf + y) = (char*)
-                            malloc(sizeof(char) * (tmplen + 1))) == NULL) {
+                            malloc(sizeof(char) * (x + 1))) == NULL) {
                     status = -4; goto ERR;
+                } else {
+                    memcpy(*(buf + y), tmp, x);
+                    *(*(buf + y) + x) = '\0';
+                    memset(tmp, '\0', th_x);
                 }
-
-                /* copy, str to buffer */
-                memcpy(*(buf + y), str, tmplen);
-                *(*(buf + y) + tmplen) = '\0';
-                /* initialize temporary buffer */
-                memset(str, '\0', length);
-                x = tmplen = 0;
-                y++;
+                if (c == '\n') {
+                    x = 0;
+                    y++;
+                } else if (c == EOF) {
+                    goto ENDLOOP;
+                }
                 break;
             default:
-                /* reallocate temporary array */
-                if (x == (length - 1)) {
-                    length += t_length;
-                    if ((str = (char*)
-                                realloc(str, sizeof(char) * length)) == NULL) {
+                if (x >= th_x) {
+                    th_x += th_x;
+                    if ((tmp = (char*)
+                                realloc(tmp, sizeof(char) * th_x)) == NULL) {
                         status = -5; goto ERR;
                     }
                 }
-                *(str + x) = c;
+                *(tmp + x) = c;
                 x++;
-                continue;
+                break;
         }
     }
 
-    /* \n -{data}- EOF */
-    if (x > 0) {
-        /* remove lf? */
-        if (chomp > 0)
-            *(str + x) = '\0';
-        else
-            *(str + x) = c;
+ENDLOOP:
+    if (tmp != NULL)
+        free(tmp);
 
-        tmplen = strlen(str);
-        /* reallocate array of Y coordinate */
-        if (y == (lines - 1)) {
-            lines += t_lines;
-            if ((buf = (char**)
-                        realloc(buf, sizeof(char*) * lines)) == NULL) {
-                status = -6; goto ERR;
-            }
-        }
-        /* allocate array for X coordinate */
-        if ((*(buf + y) = (char*)
-                    malloc(sizeof(char) * (tmplen + 1))) == NULL) {
-            status = -7; goto ERR;
-        }
-
-        /* copy, str to buffer */
-        memcpy(*(buf + y), str, tmplen);
-        *(*(buf + y) + tmplen - 1) = '\0';
-        y++;
-    }
-
-    /* no data */
-    if (x == 0 && y == 0) {
-        if (buf != NULL)
-            free(buf);
-        if (str != NULL)
-            free(str);
-
-        return 0;
-    }
     *(buf + y) = NULL;
-    free(str);
-
     *dest = buf;
 
     return y;
 
 ERR:
-    if (buf != NULL) {
-        lines = y;
-        y = 0;
-        while (y <= lines) {
-            if (*(buf + y) != NULL)
-                free(*(buf + y));
-            y++;
-        }
-        free(buf);
+    switch (status) {
+        case    -5:
+        case    -4:
+        case    -3:
+            if (buf != NULL)
+        case    -2:
+            if (tmp != NULL)
+                free(tmp);
+        case    -1:
+            break;
     }
-    if (str != NULL)
-        free(str);
 
     return status;
 }
 
 int file_is_binary(FILE* fp)
 {
-    int c   = 0;
+    int     c   = 0;
 
     while ((c = fgetc(fp)) != EOF) {
         if (c <= 0x08)

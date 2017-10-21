@@ -19,8 +19,8 @@ extern "C" {
 
 #include <stdio.h>
 
-extern int p_count_file_lines(char** buf);
-extern int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp);
+extern int count_file_lines(FILE* fp);
+extern int load_file_to_array(char*** dest, size_t th_x, size_t th_y, FILE* fp);
 extern int file_is_binary(FILE* fp);
 extern int watch_fd(int fd, long timeout);
 

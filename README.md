@@ -243,8 +243,8 @@ void release_env_t(env_t* env);
 ```c
 #include <benly/file.h>
 
-int p_count_file_lines(char** buf);
-int p_read_file_char(char*** dest, int t_lines, size_t t_length, FILE* fp, int chomp);
+int count_file_lines(FILE* fp);
+int load_file_to_array(char*** dest, size_t th_x, size_t th_y, FILE* fp);
 int file_is_binary(FILE* fp);
 int watch_fd(int fd, long timeout);
 ```
