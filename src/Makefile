@@ -47,8 +47,8 @@ DEFCFLAGS    += -D_GNU_SOURCE -D__USE_GNU
 endif
 # with glib-2.0
 ifeq ($(WITH_GLIB), 1)
-DEFCFLAGS    += -DWITH_GLIB `pkg-config --cflags --libs glib-2.0`
-DEFLDFLAGS   += `pkg-config --cflags --libs glib-2.0` 
+DEFCFLAGS    += -DWITH_GLIB `pkg-config --cflags glib-2.0`
+DEFLDFLAGS   += `pkg-config --libs glib-2.0` 
 endif
 # with POSIX regex.h
 ifeq ($(WITH_REGEX), 1)
