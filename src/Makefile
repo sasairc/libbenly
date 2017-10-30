@@ -21,6 +21,7 @@ SUFFIX       = so
 # for Other System
 endif
 OBJS         = libbenly_cmd.$(SUFFIX)    \
+	       libbenly_column.$(SUFFIX) \
                libbenly_env.$(SUFFIX)    \
                libbenly_file.$(SUFFIX)   \
                libbenly_hash.$(SUFFIX)   \
@@ -66,6 +67,17 @@ ifeq ($(CMDLINE), 0)
 else
 	$(CC) $(CFLAGS) -c $< -o cmd.o $(DEFCFLAGS)
 	$(CC) $(LDFLAGS) cmd.o -o $@ $(DEFLDFLAGS)
+endif
+
+libbenly_column.$(SUFFIX): column.c column.h
+ifeq ($(CMDLINE), 0)
+	@echo "  CC      column.o"
+	@$(CC) $(CFLAGS) -c $< -o column.o $(DEFCFLAGS)
+	@echo "  CCLD    $@"
+	@$(CC) $(LDFLAGS) column.o -o $@ $(DEFLDFLAGS)
+else
+	$(CC) $(CFLAGS) -c $< -o column.o $(DEFCFLAGS)
+	$(CC) $(LDFLAGS) column.o -o $@ $(DEFLDFLAGS)
 endif
 
 libbenly_env.$(SUFFIX): env.c env.h
@@ -150,6 +162,9 @@ install-lib: $(OBJS)
 	install -pm 755 libbenly_cmd.$(SUFFIX) $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_cmd.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_cmd.$(SUFFIX)
+	install -pm 755 libbenly_column.$(SUFFIX) $(LIBDIR)/libbenly_column.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_column.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_column.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_column.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_column.$(SUFFIX)
 	install -pm 755 libbenly_env.$(SUFFIX) $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_env.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_env.$(SUFFIX)
@@ -173,6 +188,7 @@ install-lib: $(OBJS)
 	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX)
 ifeq ($(shell uname), Darwin)
 	install_name_tool -change "libbenly_cmd.dylib" "$(LIBDIR)/libbenly_cmd.dylib" $(LIBDIR)/libbenly_cmd.dylib
+	install_name_tool -change "libbenly_column.dylib" "$(LIBDIR)/libbenly_column.dylib" $(LIBDIR)/libbenly_column.dylib
 	install_name_tool -change "libbenly_env.dylib" "$(LIBDIR)/libbenly_env.dylib" $(LIBDIR)/libbenly_env.dylib
 	install_name_tool -change "libbenly_file.dylib" "$(LIBDIR)/libbenly_file.dylib" $(LIBDIR)/libbenly_file.dylib
 	install_name_tool -change "libbenly_hash.dylib" "$(LIBDIR)/libbenly_hash.dylib" $(LIBDIR)/libbenly_hash.dylib

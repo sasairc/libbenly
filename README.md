@@ -224,6 +224,14 @@ void redirect(int oldfd, int newfd);
 void release_cmd_t(cmd_t* cmd);
 ```
 
+### column.h
+
+```c
+#include <benly/column.h>
+
+int tablize(char** const array[]);
+```
+
 ### env.h
 
 ```c
