@@ -1,7 +1,7 @@
 /*
  * libbenly (便利) - less a misc than a poor library.
  *
- * colmun.c
+ * column.c
  *
  * Copyright (c) 2017 sasairc
  * This work is free. You can redistribute it and/or modify it under the
