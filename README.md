@@ -360,6 +360,28 @@ int simple_exec(const char* cmd);
 
 The cloning flags is defined in the file *linux/sched.h*.
 
+### spinner.h
+
+```c
+#include <benly/spinner.h>
+
+#ifndef LOCALE
+#define LOCALE  ""
+#endif
+
+typedef struct SPINNER {
+    pid_t   pid;
+    char*   msg;
+    char*   symbl;
+    int     (*config)(struct SPINNER** spinner, const char* msg, const char* symbl);
+    int     (*until)(struct SPINNER** spinner, const char* msg, const char* symbl);
+    int     (*done)(struct SPINNER* spinner);
+    void    (*release)(struct SPINNER* spinner);
+} SPINNER;
+
+int init_spinner(SPINNER** spinner);
+```
+
 ### signal.h
 
 ```c

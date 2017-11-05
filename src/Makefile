@@ -20,14 +20,15 @@ ifndef SUFFIX
 SUFFIX       = so
 # for Other System
 endif
-OBJS         = libbenly_cmd.$(SUFFIX)    \
-	       libbenly_column.$(SUFFIX) \
-               libbenly_env.$(SUFFIX)    \
-               libbenly_file.$(SUFFIX)   \
-               libbenly_hash.$(SUFFIX)   \
-               libbenly_memory.$(SUFFIX) \
-               libbenly_proc.$(SUFFIX)   \
-               libbenly_signal.$(SUFFIX) \
+OBJS         = libbenly_cmd.$(SUFFIX)     \
+	       libbenly_column.$(SUFFIX)  \
+               libbenly_env.$(SUFFIX)     \
+               libbenly_file.$(SUFFIX)    \
+               libbenly_hash.$(SUFFIX)    \
+               libbenly_memory.$(SUFFIX)  \
+               libbenly_proc.$(SUFFIX)    \
+               libbenly_signal.$(SUFFIX)  \
+	       libbenly_spinner.$(SUFFIX) \
                libbenly_string.$(SUFFIX)
 DEFCFLAGS    = -fPIC                     \
                -DLOCALE=\"$(LOCALE)\"
@@ -146,6 +147,17 @@ else
 	$(CC) $(LDFLAGS) signal.o -o $@ $(DEFLDFLAGS)
 endif
 
+libbenly_spinner.$(SUFFIX): spinner.c spinner.h
+ifeq ($(CMDLINE), 0)
+	@echo "  CC      spinner.o"
+	@$(CC) $(CFLAGS) -c $< -o spinner.o $(DEFCFLAGS)
+	@echo "  CCLD    $@"
+	@$(CC) $(LDFLAGS) spinner.o -o $@ $(DEFLDFLAGS)
+else
+	$(CC) $(CFLAGS) -c $< -o spinner.o $(DEFCFLAGS)
+	$(CC) $(LDFLAGS) spinner.o -o $@ $(DEFLDFLAGS)
+endif
+
 libbenly_string.$(SUFFIX): string.c string.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      string.o"
@@ -183,6 +195,9 @@ install-lib: $(OBJS)
 	install -pm 755 libbenly_signal.$(SUFFIX) $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_signal.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_signal.$(SUFFIX)
+	install -pm 755 libbenly_spinner.$(SUFFIX) $(LIBDIR)/libbenly_spinner.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_spinner.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_spinner.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_spinner.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_spinner.$(SUFFIX)
 	install -pm 755 libbenly_string.$(SUFFIX) $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX)
@@ -195,6 +210,7 @@ ifeq ($(shell uname), Darwin)
 	install_name_tool -change "libbenly_memory.dylib" "$(LIBDIR)/libbenly_memory.dylib" $(LIBDIR)/libbenly_memory.dylib
 	install_name_tool -change "libbenly_proc.dylib" "$(LIBDIR)/libbenly_proc.dylib" $(LIBDIR)/libbenly_proc.dylib
 	install_name_tool -change "libbenly_signal.dylib" "$(LIBDIR)/libbenly_signal.dylib" $(LIBDIR)/libbenly_signal.dylib
+	install_name_tool -change "libbenly_spinner.dylib" "$(LIBDIR)/libbenly_spinner.dylib" $(LIBDIR)/libbenly_spinner.dylib
 	install_name_tool -change "libbenly_string.dylib" "$(LIBDIR)/libbenly_string.dylib" $(LIBDIR)/libbenly_string.dylib
 # for Darwin
 endif
