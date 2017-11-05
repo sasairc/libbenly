@@ -22,6 +22,7 @@
 static int until_spinner(SPINNER** spinner, const char* msg, const char* symbl);
 static int config_spinner(SPINNER** spinner, const char* msg, const char* symbl);
 static int done_spinner(SPINNER* spinner);
+static void change_delay_time(SPINNER** spinner, useconds_t usec);
 static void do_animation(SPINNER* spinner);
 static void release_spinner(SPINNER* spinner);
 static void release_msg(SPINNER* spinner);
@@ -37,13 +38,15 @@ int init_spinner(SPINNER** spinner)
                 malloc(sizeof(SPINNER))) == NULL)
         return -1;
     {
-        sp->pid     = 0;
-        sp->symbl   = NULL;
-        sp->msg     = NULL;
-        sp->config  = config_spinner;
-        sp->until   = until_spinner;
-        sp->done    = done_spinner;
-        sp->release = release_spinner;
+        sp->pid             = 0;
+        sp->delay           = DEFAULT_DELAY_TIME;
+        sp->symbl           = NULL;
+        sp->msg             = NULL;
+        sp->config          = config_spinner;
+        sp->until           = until_spinner;
+        sp->done            = done_spinner;
+        sp->chg_delay_time  = change_delay_time;
+        sp->release         = release_spinner;
     }
     *spinner = sp;
 
@@ -127,7 +130,7 @@ void do_animation(SPINNER* spinner)
             fprintf(stdout, "%.*s %s",
                     size, symbl, spinner->msg);
             fflush(stdout);
-            sleep(1);
+            usleep(spinner->delay);
             fprintf(stdout, "\r");
             symbl += size;
         }
@@ -147,6 +150,14 @@ int done_spinner(SPINNER* spinner)
     fprintf(stdout, "\x1b[2K\r");
 
     return 0;
+}
+
+static
+void change_delay_time(SPINNER** spinner, useconds_t usec)
+{
+    (*spinner)->delay = usec;
+
+    return;
 }
 
 static

@@ -20,17 +20,22 @@ extern "C" {
 #include <unistd.h>
 
 #ifndef LOCALE
-#define LOCALE  ""
+#define LOCALE              ""
+/* LOCALE */
 #endif
 
+#define DEFAULT_DELAY_TIME  100000
+
 typedef struct SPINNER {
-    pid_t   pid;
-    char*   msg;
-    char*   symbl;
-    int     (*config)(struct SPINNER** spinner, const char* msg, const char* symbl);
-    int     (*until)(struct SPINNER** spinner, const char* msg, const char* symbl);
-    int     (*done)(struct SPINNER* spinner);
-    void    (*release)(struct SPINNER* spinner);
+    pid_t       pid;
+    useconds_t  delay;
+    char*       msg;
+    char*       symbl;
+    int         (*config)(struct SPINNER** spinner, const char* msg, const char* symbl);
+    int         (*until)(struct SPINNER** spinner, const char* msg, const char* symbl);
+    int         (*done)(struct SPINNER* spinner);
+    void        (*chg_delay_time)(struct SPINNER** spinner, useconds_t usec);
+    void        (*release)(struct SPINNER* spinner);
 } SPINNER;
 
 extern int init_spinner(SPINNER** spinner);
