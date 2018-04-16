@@ -428,6 +428,7 @@ int strmax_with_regex(int val, char** src, regex_t* reg);
 #include <benly/uri.h>
 
 int encode_uri(char* const src, char** dest);
+int decode_uri(char* const src, char** dest);
 ```
 
 ## License

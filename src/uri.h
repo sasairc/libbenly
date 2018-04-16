@@ -18,6 +18,7 @@ extern "C" {
 #endif
 
 extern int encode_uri(char* const src, char** dest);
+extern int decode_uri(char* const src, char** dest);
 
 #ifdef  __cplusplus
 }

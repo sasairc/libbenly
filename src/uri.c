@@ -76,3 +76,54 @@ ERR:
 
     return status;
 }
+
+int decode_uri(char* const src, char** dest)
+{
+    int     status  = 0;
+
+    size_t  bufsiz  = DEFAULT_BUFSIZE,
+            current = 0;
+
+    char*   p       = src;
+
+    if ((*dest = (char*)
+                malloc(sizeof(char) * bufsiz)) == NULL) {
+        status = -1; goto ERR;
+    } else {
+        memset(*dest, '\0', bufsiz);
+    }
+
+    while (*p != '\0') {
+        if ((current + 2) >= bufsiz) {
+            bufsiz += DEFAULT_BUFSIZE;
+            if ((*dest = (char*)
+                        realloc(*dest, sizeof(char) * bufsiz)) == NULL) {
+                status = -2; goto ERR;
+            } else {
+                memset(*dest + current, '\0', DEFAULT_BUFSIZE);
+            }
+        }
+        if (*p == '%') {
+            p++;
+            sscanf(p, "%2X", *(dest) + current);
+            p += 2;
+        } else {
+            *(*(dest) + current) = *p;
+            p++;
+        }
+        current++;
+    }
+
+    return 0;
+
+ERR:
+    switch (status) {
+        case    -1:
+        case    -2:
+            fprintf(stderr, "%s\n",
+                    strerror(errno));
+            break;
+    }
+
+    return status;
+}
