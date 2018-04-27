@@ -173,11 +173,11 @@ endif
 libbenly_uri.$(SUFFIX): uri.c uri.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      uri.o"
-	@$(CC) $(CFLAGS) -c $< -o uri.o $(DEFCFLAGS)
+	@$(CC) $(CFLAGS) -Wno-format -c $< -o uri.o $(DEFCFLAGS)
 	@echo "  CCLD    $@"
 	@$(CC) $(LDFLAGS) uri.o -o $@ $(DEFLDFLAGS)
 else
-	$(CC) $(CFLAGS) -c $< -o uri.o $(DEFCFLAGS)
+	$(CC) $(CFLAGS) -Wno-format -c $< -o uri.o $(DEFCFLAGS)
 	$(CC) $(LDFLAGS) uri.o -o $@ $(DEFLDFLAGS)
 endif
 
