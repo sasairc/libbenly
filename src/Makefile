@@ -30,6 +30,7 @@ OBJS         = libbenly_cmd.$(SUFFIX)     \
                libbenly_signal.$(SUFFIX)  \
 	       libbenly_spinner.$(SUFFIX) \
                libbenly_string.$(SUFFIX)  \
+               libbenly_typestring.$(SUFFIX)  \
                libbenly_uri.$(SUFFIX)
 DEFCFLAGS    = -fPIC                     \
                -DLOCALE=\"$(LOCALE)\"
@@ -170,6 +171,17 @@ else
 	$(CC) $(LDFLAGS) string.o -o $@ $(DEFLDFLAGS)
 endif
 
+libbenly_typestring.$(SUFFIX): typestring.c typestring.h
+ifeq ($(CMDLINE), 0)
+	@echo "  CC      typestring.o"
+	@$(CC) $(CFLAGS) -c $< -o typestring.o $(DEFCFLAGS)
+	@echo "  CCLD    $@"
+	@$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS)
+else
+	$(CC) $(CFLAGS) -c $< -o typestring.o $(DEFCFLAGS)
+	$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS)
+endif
+
 libbenly_uri.$(SUFFIX): uri.c uri.h
 ifeq ($(CMDLINE), 0)
 	@echo "  CC      uri.o"
@@ -214,6 +226,9 @@ install-lib: $(OBJS)
 	install -pm 755 libbenly_string.$(SUFFIX) $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_string.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_string.$(SUFFIX)
+	install -pm 755 libbenly_typestring.$(SUFFIX) $(LIBDIR)/libbenly_typestring.$(SUFFIX).$(VERSIONSTR)
+	ln -sf $(LIBDIR)/libbenly_typestring.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_typestring.$(SUFFIX).$(VERSION)
+	ln -sf $(LIBDIR)/libbenly_typestring.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_typestring.$(SUFFIX)
 	install -pm 755 libbenly_uri.$(SUFFIX) $(LIBDIR)/libbenly_uri.$(SUFFIX).$(VERSIONSTR)
 	ln -sf $(LIBDIR)/libbenly_uri.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_uri.$(SUFFIX).$(VERSION)
 	ln -sf $(LIBDIR)/libbenly_uri.$(SUFFIX).$(VERSIONSTR) $(LIBDIR)/libbenly_uri.$(SUFFIX)
@@ -229,6 +244,7 @@ ifeq ($(shell uname), Darwin)
 	install_name_tool -change "libbenly_signal.dylib" "$(LIBDIR)/libbenly_signal.dylib" $(LIBDIR)/libbenly_signal.dylib
 	install_name_tool -change "libbenly_spinner.dylib" "$(LIBDIR)/libbenly_spinner.dylib" $(LIBDIR)/libbenly_spinner.dylib
 	install_name_tool -change "libbenly_string.dylib" "$(LIBDIR)/libbenly_string.dylib" $(LIBDIR)/libbenly_string.dylib
+	install_name_tool -change "libbenly_typestring.dylib" "$(LIBDIR)/libbenly_typestring.dylib" $(LIBDIR)/libbenly_typestring.dylib
 	install_name_tool -change "libbenly_uri.dylib" "$(LIBDIR)/libbenly_uri.dylib" $(LIBDIR)/libbenly_uri.dylib
 # for Darwin
 endif
