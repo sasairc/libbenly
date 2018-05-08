@@ -439,6 +439,7 @@ typedef struct STRING {
     size_t  length;
     char*   string;
     size_t  (*size)(STRING* self);
+    size_t  (*mblen)(STRING* self);
     size_t  (*capacity)(STRING* self);
     int     (*resize)(STRING** self, size_t size, char const c);
     int     (*assign)(STRING** self, char* const str);
@@ -454,8 +455,10 @@ typedef struct STRING {
     size_t  (*copy)(STRING* self, char** dest);
     STRING* (*substr)(STRING* self, size_t pos, size_t n);
     int     (*c_substr)(STRING* self, size_t pos, size_t n, char** dest);
+    int     (*to_char_arr)(STRING* self, char*** dest);
     int     (*compare)(STRING* self, struct STRING* opp);
     int     (*c_compare)(STRING* self, const char* s);
+    int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;

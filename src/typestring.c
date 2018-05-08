@@ -13,10 +13,13 @@
 #include "./typestring.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <locale.h>
 #include <string.h>
 #include <errno.h>
 
 static size_t size(STRING* self);
+static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
 static int assign(STRING** self, char* const str);
 static int append(STRING** self, char* const str);
@@ -31,8 +34,10 @@ static char* c_str(STRING* self);
 static size_t copy(STRING* self, char** dest);
 static STRING* substr(STRING* self, size_t pos, size_t n);
 static int c_substr(STRING* self, size_t pos, size_t n, char** dest);
+static int to_char_arr(STRING* self, char*** dest);
 static int compare(STRING* self, STRING* opp);
 static int c_compare(STRING* self, const char* s);
+static int ascii_only(STRING* self);
 static void clear(STRING** self);
 static void release(STRING* self);
 
@@ -54,6 +59,7 @@ STRING* new_string(char* const str)
         string->length      = 0;
         string->string      = NULL;
         string->size        = size;
+        string->mblen       = t_string_mblen;
         string->capacity    = capacity;
         string->assign      = assign;
         string->append      = append;
@@ -67,9 +73,11 @@ STRING* new_string(char* const str)
         string->c_str       = c_str;
         string->substr      = substr;
         string->c_substr    = c_substr;
+        string->to_char_arr = to_char_arr;
         string->copy        = copy;
         string->compare     = compare;
         string->c_compare   = c_compare;
+        string->ascii_only  = ascii_only;
         string->clear       = clear;
         string->release     = release;
     }
@@ -105,6 +113,28 @@ static
 size_t size(STRING* self)
 {
     return self->length;
+}
+
+static
+size_t t_string_mblen(STRING* self)
+{
+    size_t  c   = 0;
+
+    char*   p   = self->c_str(self);
+
+    setlocale(LC_CTYPE, "");
+    while (*p != '\0') {
+        if ((p += mblen(p, MB_CUR_MAX)) < 0)
+            goto ERR;
+        c++;
+    }
+
+    return c;
+
+ERR:
+    fprintf(stderr, "invalid character\n");
+
+    return 0;
 }
 
 static
@@ -358,6 +388,79 @@ ERR:
 }
 
 static
+int to_char_arr(STRING* self, char*** dest)
+{
+    int     status  = 0,
+            ch      = 0;
+
+    size_t  y       = 0;
+
+    char*   p       = self->c_str(self);
+
+    if (self->mblen(self) == 0) {
+        status = -1; goto ERR;
+    }
+    if ((*dest = (char**)
+                malloc(sizeof(char*) * self->mblen(self))) == NULL) {
+        status = -2; goto ERR;
+    } else {
+        y = 0;
+        while (y < self->mblen(self)) {
+            *((*dest) + y) = NULL;
+            y++;
+        }
+    }
+
+    setlocale(LC_CTYPE, "");
+    y = 0;
+    while (*p != '\0' && y < self->mblen(self)) {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+            status = -3; goto ERR;
+        }
+        if ((*((*dest) + y) = (char*)
+                    malloc(sizeof(char) * (ch + 1))) == NULL) {
+            status = -4; goto ERR;
+        } else {
+            memcpy(*((*dest) + y), p, ch);
+            *(*((*dest) + y) + ch) = '\0';
+        }
+        p += ch;
+        y++;
+    }
+
+    return 0;
+
+ERR:
+    switch (status) {
+        case    -4:
+        case    -3:
+            y = 0;
+            if (*dest != NULL) {
+                while (y < self->mblen(self)) {
+                    if (*((*dest) + y) != NULL) {
+                        free(*((*dest) + y));
+                        *((*dest) + y) = NULL;
+                    }
+                    y++;
+                }
+                free(*dest);
+                *dest = NULL;
+            }
+        case    -2:
+            if (status == -3)
+                fprintf(stderr, "invalid character\n");
+            else
+                fprintf(stderr, "%s\n",
+                        strerror(errno));
+        case    -1:
+            break;
+
+    }
+
+    return status;
+}
+
+static
 int compare(STRING* self, STRING* opp)
 {
     if ((self->size(self) != opp->size(opp)) ||
@@ -378,6 +481,20 @@ int c_compare(STRING* self, const char* s)
         return 1;
 
     return 0;
+}
+
+static
+int ascii_only(STRING* self)
+{
+    char*   p   = self->c_str(self);
+
+    while (*p != '\0') {
+        if (isascii(*p) == 0)
+            return 0;
+        p++;
+    }
+
+    return 1;
 }
 
 static
