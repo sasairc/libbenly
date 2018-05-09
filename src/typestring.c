@@ -18,6 +18,16 @@
 #include <string.h>
 #include <errno.h>
 
+/*
+ * @ LIBRARY_LIBRARY_VERBOSE
+ * displaying system call errors
+ */
+#ifdef  LIBRARY_LIBRARY_VERBOSE
+#define print_error()   fprintf(stderr, "%s: %d: %s\n",\
+        __FILE__, __LINE__, strerror(errno))
+/* LIBRARY_VERBOSE */
+#endif
+
 static size_t size(STRING* self);
 static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
@@ -55,6 +65,10 @@ STRING* new_string(char* const str)
 
     if ((string = (STRING*)
                 malloc(sizeof(STRING))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
         status = EMEMORYALLOC; goto ERR;
     } else {
         string->alloc_size  = 0;
@@ -147,6 +161,10 @@ size_t t_string_mblen(STRING* self)
     setlocale(LC_CTYPE, "");
     while (*p != '\0') {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error()
+/* LIBRARY_VERBOSE */
+#endif
             status = EINVALIDCHAR; goto ERR;
         } else {
             p += ch;
@@ -376,6 +394,10 @@ size_t copy(STRING* self, char** dest)
     }
     if ((*dest = (char*)
                 malloc(sizeof(char) * (self->length + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
         status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy(*dest, self->string, self->length);
@@ -449,6 +471,10 @@ int c_substr(STRING* self, size_t pos, size_t n, char** dest)
 
     if ((*dest = (char*)
                 malloc(sizeof(char) * (n + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
         status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy(*dest, self->string + pos, n);
@@ -462,8 +488,6 @@ ERR:
         case    EOUTOFRANGE:
             break;
         case    EMEMORYALLOC:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
             break;
     }
 
@@ -484,6 +508,10 @@ int to_char_arr(STRING* self, char*** dest)
     }
     if ((*dest = (char**)
                 malloc(sizeof(char*) * self->mblen(self))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
         status = EMEMORYALLOC; goto ERR;
     } else {
         y = 0;
@@ -497,10 +525,18 @@ int to_char_arr(STRING* self, char*** dest)
     y = 0;
     while (*p != '\0' && y < self->mblen(self)) {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
             status = EINVALIDCHAR; goto ERR;
         }
         if ((*((*dest) + y) = (char*)
                     malloc(sizeof(char) * (ch + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
             status = EMEMORYALLOC; goto ERR;
         } else {
             memcpy(*((*dest) + y), p, ch);
@@ -614,10 +650,15 @@ int allocate_memory(STRING** self, size_t size)
         (*self)->alloc_size += T_STRING_DEFAULT_ALLOC_SIZE;
 
     if (((*self)->string = (char*)
-                malloc(sizeof(char) * (*self)->alloc_size)) == NULL)
+                malloc(sizeof(char) * (*self)->alloc_size)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
         return -1;
-    else
+    } else {
         memset((*self)->string, '\0', (*self)->alloc_size);
+    }
 
     return 0;
 }
@@ -635,11 +676,16 @@ int reallocate_memory(STRING** self, size_t size)
 
     if (((*self)->string = (char*)
                 realloc((*self)->string,
-                    sizeof(char) * (*self)->alloc_size)) == NULL)
+                    sizeof(char) * (*self)->alloc_size)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
         return -1;
-    else
+    } else {
         memset((*self)->string + old_alloc_size,
                 '\0', (*self)->alloc_size - old_alloc_size);
+    }
 
     return 0;
 }
