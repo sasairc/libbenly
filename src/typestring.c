@@ -24,8 +24,10 @@ static size_t capacity(STRING* self);
 static int assign(STRING** self, char* const str);
 static int append(STRING** self, char* const str);
 static int insert(STRING** self, size_t pos, char* const str);
+static int erase(STRING** self, size_t pos, size_t n);
 static int push_back(STRING** self, char const c);
 static void pop_back(STRING** self);
+static void swap(STRING** s1, STRING** s2);
 static int empty(STRING* self);
 static char at(STRING* self, size_t pos);
 static char front(STRING* self);
@@ -45,15 +47,15 @@ static int is_in_range(STRING* self, size_t pos);
 static int allocate_memory(STRING** self, size_t size);
 static int reallocate_memory(STRING** self, size_t size);
 
+int status;
+
 STRING* new_string(char* const str)
 {
-    int     status  = 0;
-
     STRING* string  = NULL;
 
     if ((string = (STRING*)
                 malloc(sizeof(STRING))) == NULL) {
-        status = -1; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         string->alloc_size  = 0;
         string->length      = 0;
@@ -65,7 +67,9 @@ STRING* new_string(char* const str)
         string->append      = append;
         string->push_back   = push_back;
         string->pop_back    = pop_back;
+        string->swap        = swap;
         string->insert      = insert;
+        string->erase       = erase;
         string->at          = at;
         string->empty       = empty;
         string->front       = front;
@@ -83,7 +87,7 @@ STRING* new_string(char* const str)
     }
     if (str != NULL) {
         if (string->assign(&string, str) < 0) {
-            status = -3; goto ERR;
+            status = EMEMORYALLOC; goto ERR;
         }
     }
 
@@ -91,14 +95,7 @@ STRING* new_string(char* const str)
 
 ERR:
     switch (status) {
-        case    -1:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
-            break;
-        case    -2:
-        case    -3:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
+        case    EMEMORYALLOC:
             if (string != NULL) {
                 free(string);
                 string = NULL;
@@ -107,6 +104,29 @@ ERR:
     }
 
     return NULL;
+}
+
+void
+release_char_arr(STRING* self, size_t n, char** arr)
+{
+    size_t  y   = 0;
+
+    if (self != NULL)
+        n = self->mblen(self);
+
+    if (arr != NULL) {
+        while (y < n) {
+            if (*(arr + y) != NULL) {
+                free(*(arr + y));
+                *(arr + y) = NULL;
+            }
+            y++;
+        }
+        free(arr);
+        arr = NULL;
+    }
+
+    return;
 }
 
 static
@@ -118,21 +138,26 @@ size_t size(STRING* self)
 static
 size_t t_string_mblen(STRING* self)
 {
+    int     ch  = 0;
+
     size_t  c   = 0;
 
     char*   p   = self->c_str(self);
 
     setlocale(LC_CTYPE, "");
     while (*p != '\0') {
-        if ((p += mblen(p, MB_CUR_MAX)) < 0)
-            goto ERR;
-        c++;
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+            status = EINVALIDCHAR; goto ERR;
+        } else {
+            p += ch;
+            c++;
+        }
     }
 
     return c;
 
 ERR:
-    fprintf(stderr, "invalid character\n");
+    status = EINVALIDCHAR;
 
     return 0;
 }
@@ -146,15 +171,16 @@ size_t capacity(STRING* self)
 static
 int assign(STRING** self, char* const str)
 {
-    int     status  = 0;
-
+    if (str == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
     if ((*self)->string != NULL) {
         free((*self)->string);
         (*self)->string = NULL;
     }
     (*self)->length = strlen(str);
     if (allocate_memory(self, (*self)->length + 1) < 0) {
-        status = -1; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy((*self)->string, str, (*self)->length);
         *((*self)->string + (*self)->length) = '\0';
@@ -164,9 +190,8 @@ int assign(STRING** self, char* const str)
 
 ERR:
     switch (status) {
-        case    -1:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
+        case    EARGISNULPTR:
+        case    EMEMORYALLOC:
             break;
     }
 
@@ -176,10 +201,11 @@ ERR:
 static
 int append(STRING** self, char* const str)
 {
-    int     status  = 0;
-
+    if (str == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
     if (reallocate_memory(self, strlen(str) + 1) < 0) {
-        status = -1; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy((*self)->string + (*self)->length, str, strlen(str));
         (*self)->length += strlen(str);
@@ -190,9 +216,8 @@ int append(STRING** self, char* const str)
 
 ERR:
     switch (status) {
-        case    -1:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
+        case    EARGISNULPTR:
+        case    EMEMORYALLOC:
             break;
     }
 
@@ -202,13 +227,14 @@ ERR:
 static
 int insert(STRING** self, size_t pos, char* const str)
 {
-    if (!is_in_range(*self, pos))
-        return -1;
-
-    int     status  = 0;
-
+    if (str == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
+    if (!is_in_range(*self, pos)) {
+        status = EOUTOFRANGE; goto ERR;
+    }
     if (reallocate_memory(self, strlen(str) + 1) < 0) {
-        status = -2; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         memmove((*self)->string + strlen(str) + pos,
                 (*self)->string + pos,
@@ -222,9 +248,36 @@ int insert(STRING** self, size_t pos, char* const str)
 
 ERR:
     switch (status) {
-        case    -2:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
+        case    EARGISNULPTR:
+        case    EOUTOFRANGE:
+        case    EMEMORYALLOC:
+            break;
+    }
+
+    return status;
+}
+
+static
+int erase(STRING** self, size_t pos, size_t n)
+{
+    if (!is_in_range(*self, pos) ||
+            !is_in_range(*self, pos + n)) {
+        status = EOUTOFRANGE; goto ERR;
+    }
+
+    if (n == 0)
+        n = (*self)->size(*self) - pos;
+
+    memmove((*self)->string + pos,
+            (*self)->string + pos + n, n);
+    memset((*self)->string + pos + n, '\0', n);
+    (*self)->length = strlen((*self)->c_str(*self));
+
+    return 0;
+
+ERR:
+    switch (status) {
+        case    EOUTOFRANGE:
             break;
     }
 
@@ -234,10 +287,8 @@ ERR:
 static
 int push_back(STRING** self, char const c)
 {
-    int     status  = 0;
-
     if (reallocate_memory(self, sizeof(c) + 1) < 0) {
-        status = -1; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         *((*self)->string + (*self)->length) = c;
         *((*self)->string + (*self)->length + 1) = '\0';
@@ -248,9 +299,7 @@ int push_back(STRING** self, char const c)
 
 ERR:
     switch (status) {
-        case    -1:
-            fprintf(stderr, "%s\n",
-                    strerror(errno));
+        case    EMEMORYALLOC:
             break;
     }
 
@@ -260,11 +309,24 @@ ERR:
 static
 void pop_back(STRING** self)
 {
-    if ((*self)->length == 0)
-        return;
+    if ((*self)->length == 0) {
+        status = ESTRISEMPTY;
+    } else {
+        (*self)->length -= 1;
+        *((*self)->string + (*self)->length) = '\0';
+    }
 
-    (*self)->length -= 1;
-    *((*self)->string + (*self)->length) = '\0';
+    return;
+}
+
+static
+void swap(STRING** s1, STRING** s2)
+{
+    STRING*     s3  = NULL;
+
+    s3 = *s1;
+    *s1 = *s2;
+    *s2 = s3;
 
     return;
 }
@@ -278,10 +340,14 @@ int empty(STRING* self)
 static
 char at(STRING* self, size_t pos)
 {
-    if (!is_in_range(self, pos))
-        return '\0';
+    char    c   =   '\0';
 
-    return *(self->string + pos - 1);
+    if (!is_in_range(self, pos))
+        status = EOUTOFRANGE;
+    else
+        c = *(self->string + pos - 1);
+
+    return c;
 }
 
 static
@@ -305,21 +371,27 @@ char* c_str(STRING* self)
 static
 size_t copy(STRING* self, char** dest)
 {
-    if (self->length == 0)
-        return 0;
-
+    if (self->size(self) == 0) {
+        status = ESTRISEMPTY; goto ERR;
+    }
     if ((*dest = (char*)
                 malloc(sizeof(char) * (self->length + 1))) == NULL) {
-        fprintf(stderr, "%s\n",
-                strerror(errno));
-
-        return 0;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy(*dest, self->string, self->length);
         *((*dest) + self->length) = '\0';
     }
 
     return self->length + 1;
+
+ERR:
+    switch (status) {
+        case    ESTRISEMPTY:
+        case    EMEMORYALLOC:
+            break;
+    }
+
+    return status;
 }
 
 static
@@ -329,44 +401,55 @@ STRING* substr(STRING* self, size_t pos, size_t n)
 
     if (n == 0)
         n = self->size(self) - pos;
+
     if (!is_in_range(self, pos) ||
-            (self->size(self) < (pos + n)))
-        return NULL;
+            !is_in_range(self, pos + n)){
+        status = EOUTOFRANGE; goto ERR;
+    }
 
-    if ((s = new_string(NULL)) == NULL)
-        return NULL;
-    else
+    if ((s = new_string(NULL)) == NULL) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
         s->length = n;
-
+    }
     if (allocate_memory(&s, s->length + 1) < 0) {
-        fprintf(stderr, "%s\n",
-                strerror(errno));
-        s->release(s);
-
-        return NULL;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy(s->string, self->string + pos, s->length);
         *(s->string + s->length) = '\0';
     }
 
     return s;
+
+ERR:
+    switch (status) {
+        case    EOUTOFRANGE:
+            break;
+        case    EMEMORYALLOC:
+            if (s != NULL) {
+                s->release(s);
+                s = NULL;
+            }
+            break;
+    }
+
+    return NULL;
 }
 
 static
 int c_substr(STRING* self, size_t pos, size_t n, char** dest)
 {
-    int     status  = 0;
-
     if (n == 0)
         n = self->size(self) - pos;
+
     if (!is_in_range(self, pos) ||
-            (self->size(self) < (pos + n))) {
-        status = -1; goto ERR;
+            !is_in_range(self, pos + n)){
+        status = EOUTOFRANGE; goto ERR;
     }
 
     if ((*dest = (char*)
                 malloc(sizeof(char) * (n + 1))) == NULL) {
-        status = -2; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         memcpy(*dest, self->string + pos, n);
         *((*dest) + n) = '\0';
@@ -376,9 +459,9 @@ int c_substr(STRING* self, size_t pos, size_t n, char** dest)
 
 ERR:
     switch (status) {
-        case    -1:
+        case    EOUTOFRANGE:
             break;
-        case    -2:
+        case    EMEMORYALLOC:
             fprintf(stderr, "%s\n",
                     strerror(errno));
             break;
@@ -390,19 +473,18 @@ ERR:
 static
 int to_char_arr(STRING* self, char*** dest)
 {
-    int     status  = 0,
-            ch      = 0;
+    int     ch      = 0;
 
     size_t  y       = 0;
 
     char*   p       = self->c_str(self);
 
     if (self->mblen(self) == 0) {
-        status = -1; goto ERR;
+        status = ESTRISEMPTY; goto ERR;
     }
     if ((*dest = (char**)
                 malloc(sizeof(char*) * self->mblen(self))) == NULL) {
-        status = -2; goto ERR;
+        status = EMEMORYALLOC; goto ERR;
     } else {
         y = 0;
         while (y < self->mblen(self)) {
@@ -415,11 +497,11 @@ int to_char_arr(STRING* self, char*** dest)
     y = 0;
     while (*p != '\0' && y < self->mblen(self)) {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
-            status = -3; goto ERR;
+            status = EINVALIDCHAR; goto ERR;
         }
         if ((*((*dest) + y) = (char*)
                     malloc(sizeof(char) * (ch + 1))) == NULL) {
-            status = -4; goto ERR;
+            status = EMEMORYALLOC; goto ERR;
         } else {
             memcpy(*((*dest) + y), p, ch);
             *(*((*dest) + y) + ch) = '\0';
@@ -432,29 +514,13 @@ int to_char_arr(STRING* self, char*** dest)
 
 ERR:
     switch (status) {
-        case    -4:
-        case    -3:
-            y = 0;
-            if (*dest != NULL) {
-                while (y < self->mblen(self)) {
-                    if (*((*dest) + y) != NULL) {
-                        free(*((*dest) + y));
-                        *((*dest) + y) = NULL;
-                    }
-                    y++;
-                }
-                free(*dest);
-                *dest = NULL;
-            }
-        case    -2:
-            if (status == -3)
-                fprintf(stderr, "invalid character\n");
-            else
-                fprintf(stderr, "%s\n",
-                        strerror(errno));
-        case    -1:
+        case    ESTRISEMPTY:
             break;
-
+        case    EINVALIDCHAR:
+        case    EMEMORYALLOC:
+            if (*dest != NULL)
+                release_char_arr(self, 0, *dest);
+            break;
     }
 
     return status;
@@ -473,14 +539,17 @@ int compare(STRING* self, STRING* opp)
 static
 int c_compare(STRING* self, const char* s)
 {
-    if (s == NULL)
-        return -1;
-
+    if (s == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
     if ((self->size(self) != strlen(s)) ||
             (memcmp(self->c_str(self), s, self->size(self)) != 0))
         return 1;
 
     return 0;
+
+ERR:
+    return status;
 }
 
 static
@@ -502,7 +571,7 @@ void clear(STRING** self)
 {
     if ((*self)->string != NULL) {
         free((*self)->string);
-        (*self)->string     = NULL;
+        (*self)->string = NULL;
     }
     (*self)->length     = 0;
     (*self)->alloc_size = 0;
@@ -529,7 +598,6 @@ void release(STRING* self)
  * いちいち alloc していたら効率が悪い
  * #今度にしましょう
  */
-
 static
 int is_in_range(STRING* self, size_t pos)
 {
@@ -574,4 +642,9 @@ int reallocate_memory(STRING** self, size_t size)
                 '\0', (*self)->alloc_size - old_alloc_size);
 
     return 0;
+}
+
+int* wrap_type_string_errno(void)
+{
+    return (&status);
 }

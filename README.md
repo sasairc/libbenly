@@ -432,6 +432,28 @@ int strmax_with_regex(int val, char** src, regex_t* reg);
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
+#define EOUTOFRANGE         -1
+#define EINVALIDCHAR        -2
+#define EMEMORYALLOC        -3
+#define ESTRISEMPTY         -4
+#define EARGISNULPTR        -5
+
+/*
+ * string_errno check macros
+ *
+ * e.g.  if (WOUTOFRANGE(string_errno)) {
+ *           ....
+ *       }
+ */
+#define WOUTOFRANGE(x)      ((x) == EOUTOFRANGE)
+#define WINVALIDCHAR(x)     ((x) == EINVALIDCHAR)
+#define WMEORYALLOC(x)      ((x) == EMEMORYALLOC)
+#define WSTRISEMPTY(x)      ((x) == ESTRISEMPTY)
+#define WEARGISNULPTR(x)    ((x) == EARGISNULPTR)
+
+extern int* wrap_type_string_errno(void);
+#define string_errno    (*wrap_type_string_errno())
+
 typedef struct STRING STRING;
 
 typedef struct STRING {
@@ -441,12 +463,13 @@ typedef struct STRING {
     size_t  (*size)(STRING* self);
     size_t  (*mblen)(STRING* self);
     size_t  (*capacity)(STRING* self);
-    int     (*resize)(STRING** self, size_t size, char const c);
     int     (*assign)(STRING** self, char* const str);
     int     (*append)(STRING** self, char* const str);
     int     (*push_back)(STRING** self, char const c);
     void    (*pop_back)(STRING** self);
+    void    (*swap)(STRING** s1, STRING** s2);
     int     (*insert)(STRING** self, size_t pos, char* const str);
+    int     (*erase)(STRING** self, size_t pos, size_t n);
     int     (*empty)(STRING* self);
     char    (*at)(STRING* self, size_t pos);
     char    (*front)(STRING* self);
@@ -464,7 +487,10 @@ typedef struct STRING {
 } STRING;
 
 STRING* new_string(char* const str);
+void release_char_arr(STRING* self, size_t n, char** arr);
 ```
+
+The value in *string_errno* is significant only when the return value of the call indicated an error from most library functions.
 
 ### uri.h
 
