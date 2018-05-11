@@ -17,7 +17,7 @@ extern "C" {
 /* __cplusplus */
 #endif
 
-#include <stddef.h>
+#include <stddef.h>     /* size_t */
 
 #ifndef T_STRING_DEFAULT_ALLOC_SIZE
 #define T_STRING_DEFAULT_ALLOC_SIZE 1024

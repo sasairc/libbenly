@@ -22,7 +22,7 @@
  * @ LIBRARY_LIBRARY_VERBOSE
  * displaying system call errors
  */
-#ifdef  LIBRARY_LIBRARY_VERBOSE
+#ifdef  LIBRARY_VERBOSE
 #define print_error()   fprintf(stderr, "%s: %d: %s\n",\
         __FILE__, __LINE__, strerror(errno))
 /* LIBRARY_VERBOSE */
@@ -162,7 +162,7 @@ size_t t_string_mblen(STRING* self)
     while (*p != '\0') {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
 #ifdef  LIBRARY_VERBOSE
-            print_error()
+            print_error();
 /* LIBRARY_VERBOSE */
 #endif
             status = EINVALIDCHAR; goto ERR;
@@ -287,8 +287,8 @@ int erase(STRING** self, size_t pos, size_t n)
         n = (*self)->size(*self) - pos;
 
     memmove((*self)->string + pos,
-            (*self)->string + pos + n, n);
-    memset((*self)->string + pos + n, '\0', n);
+            (*self)->string + pos + n, strlen((*self)->string + pos + n));
+    memset((*self)->string + (*self)->length - n, '\0', n);
     (*self)->length = strlen((*self)->c_str(*self));
 
     return 0;

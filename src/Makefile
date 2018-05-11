@@ -58,6 +58,10 @@ endif
 ifeq ($(WITH_REGEX), 1)
 DEFCFLAGS    += -DWITH_REGEX
 endif
+# displaying system call errors
+ifdef  LIBRARY_VERBOSE
+DEFCFLAGS    += -DLIBRARY_VERBOSE
+endif
 
 all: $(OBJS)
 
