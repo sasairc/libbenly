@@ -465,6 +465,7 @@ typedef struct STRING {
     size_t  (*capacity)(STRING* self);
     int     (*reserve)(STRING** self, size_t s);
     int     (*shrink_to_fit)(STRING** self);
+    int     (*resize)(STRING** self, size_t n, char const c);
     int     (*assign)(STRING** self, char* const str);
     int     (*append)(STRING** self, char* const str);
     int     (*push_back)(STRING** self, char const c);

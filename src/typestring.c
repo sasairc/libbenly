@@ -31,6 +31,7 @@
 static size_t size(STRING* self);
 static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
+static int resize(STRING** self, size_t n, char const c);
 static int reserve(STRING** self, size_t s);
 static int shrink_to_fit(STRING** self);
 static int assign(STRING** self, char* const str);
@@ -78,6 +79,7 @@ STRING* new_string(char* const str)
         string->string          = NULL;
         string->size            = size;
         string->mblen           = t_string_mblen;
+        string->resize          = resize;
         string->reserve         = reserve;
         string->shrink_to_fit   = shrink_to_fit;
         string->capacity        = capacity;
@@ -182,6 +184,31 @@ ERR:
     status = EINVALIDCHAR;
 
     return 0;
+}
+
+static
+int resize(STRING** self, size_t n, char const c)
+{
+    if (n == (*self)->size(*self))
+        return 0;
+
+    if (n < (*self)->size(*self)) {
+        memset((*self)->string + n, '\0', (*self)->size(*self) - n);
+        (*self)->length = strlen((*self)->string);
+    } else {
+        if (reallocate_memory(self, n + 1) < 0) {
+            status = EMEMORYALLOC; goto ERR;
+        } else {
+            memset((*self)->string + (*self)->size(*self), c, n - (*self)->size(*self));
+            *((*self)->string + n) = '\0';
+            (*self)->length = strlen((*self)->string);
+        }
+    }
+
+    return 0;
+
+ERR:
+    return status;
 }
 
 static
