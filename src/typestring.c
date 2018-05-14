@@ -31,6 +31,8 @@
 static size_t size(STRING* self);
 static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
+static int reserve(STRING** self, size_t s);
+static int shrink_to_fit(STRING** self);
 static int assign(STRING** self, char* const str);
 static int append(STRING** self, char* const str);
 static int insert(STRING** self, size_t pos, char* const str);
@@ -71,33 +73,35 @@ STRING* new_string(char* const str)
 #endif
         status = EMEMORYALLOC; goto ERR;
     } else {
-        string->alloc_size  = 0;
-        string->length      = 0;
-        string->string      = NULL;
-        string->size        = size;
-        string->mblen       = t_string_mblen;
-        string->capacity    = capacity;
-        string->assign      = assign;
-        string->append      = append;
-        string->push_back   = push_back;
-        string->pop_back    = pop_back;
-        string->swap        = swap;
-        string->insert      = insert;
-        string->erase       = erase;
-        string->at          = at;
-        string->empty       = empty;
-        string->front       = front;
-        string->back        = back;
-        string->c_str       = c_str;
-        string->substr      = substr;
-        string->c_substr    = c_substr;
-        string->to_char_arr = to_char_arr;
-        string->copy        = copy;
-        string->compare     = compare;
-        string->c_compare   = c_compare;
-        string->ascii_only  = ascii_only;
-        string->clear       = clear;
-        string->release     = release;
+        string->alloc_size      = 0;
+        string->length          = 0;
+        string->string          = NULL;
+        string->size            = size;
+        string->mblen           = t_string_mblen;
+        string->reserve         = reserve;
+        string->shrink_to_fit   = shrink_to_fit;
+        string->capacity        = capacity;
+        string->assign          = assign;
+        string->append          = append;
+        string->push_back       = push_back;
+        string->pop_back        = pop_back;
+        string->swap            = swap;
+        string->insert          = insert;
+        string->erase           = erase;
+        string->at              = at;
+        string->empty           = empty;
+        string->front           = front;
+        string->back            = back;
+        string->c_str           = c_str;
+        string->substr          = substr;
+        string->c_substr        = c_substr;
+        string->to_char_arr     = to_char_arr;
+        string->copy            = copy;
+        string->compare         = compare;
+        string->c_compare       = c_compare;
+        string->ascii_only      = ascii_only;
+        string->clear           = clear;
+        string->release         = release;
     }
     if (str != NULL) {
         if (string->assign(&string, str) < 0) {
@@ -178,6 +182,61 @@ ERR:
     status = EINVALIDCHAR;
 
     return 0;
+}
+
+static
+int reserve(STRING** self, size_t s)
+{
+    if (!s) {
+        status = EOUTOFRANGE; goto ERR;
+    }
+
+    (*self)->alloc_size = s + 1;
+    if (((*self)->string = (char*)
+                realloc((*self)->string, sizeof(char) * (*self)->alloc_size)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    }
+
+    if ((*self)->empty(*self)) {
+        memset((*self)->string, '\0', (*self)->alloc_size);
+    } else {
+        (*self)->length = s;
+        *((*self)->string + (*self)->length) = '\0';
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
+int shrink_to_fit(STRING** self)
+{
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    } else {
+        (*self)->alloc_size = (*self)->length + 1;
+        if (((*self)->string = (char*)
+                    realloc((*self)->string, sizeof(char) * (*self)->alloc_size)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            status = EMEMORYALLOC; goto ERR;
+        } else {
+            *((*self)->string + (*self)->length) = '\0';
+        }
+    }
+
+    return 0;
+
+ERR:
+    return status;
 }
 
 static

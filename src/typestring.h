@@ -48,6 +48,8 @@ typedef struct STRING {
     size_t  (*size)(STRING* self);
     size_t  (*mblen)(STRING* self);
     size_t  (*capacity)(STRING* self);
+    int     (*reserve)(STRING** self, size_t s);
+    int     (*shrink_to_fit)(STRING** self);
     int     (*assign)(STRING** self, char* const str);
     int     (*append)(STRING** self, char* const str);
     int     (*push_back)(STRING** self, char const c);
