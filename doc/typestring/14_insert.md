@@ -12,8 +12,8 @@ int s->insert(STRING** self, size_t pos, char* const str);
 
 ## 説明
 
-メンバ関数`insert()`は、`self`のメンバ変数`self->string`の指定位置`pos`へ文字列`str`を挿入する。
-その際に、`self->string`末尾のNULL文字 ('\0') は上書きされ、挿入後の文字列へ新たに付与される。
+メンバ関数`insert()`は、`self`が管理する文字列の指定位置`pos`へ文字列`str`を挿入する。
+その際、NULL文字 ('\0') は上書きされ、挿入後の文字列末尾へ新たに付与される。
 
 指定位置`pos`として有効な値は、現在の領域内に限られる。
 従って、`self->size(self)`を超えてはならないし、必然的に 0 以上の整数値である。

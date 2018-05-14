@@ -64,4 +64,4 @@ s->capacity() = 2048
 
 ## 追加情報
 
-`size()`はメンバ変数`s->alloc_size`の値を返す。従って、結果は`s->alloc_size`の参照と等価である。
+`capacity()`はメンバ変数`s->alloc_size`の値を返す。従って、結果は`s->alloc_size`の参照と等価である。

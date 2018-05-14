@@ -12,8 +12,8 @@ int s->push_back(STRING** self, char const c);
 
 ## 説明
 
-メンバ関数`push_back()`は、`self`のメンバ変数`self->string`の末尾へ要素`c`を追加する。
-その際に、`self->string`末尾のNULL文字 ('\0') は上書きされ、連結後の文字列へ新たに付与される。
+メンバ関数`push_back()`は、`self`が管理する文字列の末尾へ要素`c`を追加する。
+その際、末尾のNULL文字 ('\0') は上書きされ、追加後の文字列へ新たに付与される。
 
 ## 戻り値
 
