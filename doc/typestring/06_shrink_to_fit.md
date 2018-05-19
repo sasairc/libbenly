@@ -4,7 +4,7 @@ shrink_to_fit - メモリサイズを格納文字列まで切り詰める
 
 ## 書式
 
-```
+```c
 #include <benly/typestring.h>
 
 int s->shrink_to_fit(STRING** self);
