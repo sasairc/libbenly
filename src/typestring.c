@@ -126,6 +126,65 @@ ERR:
     return NULL;
 }
 
+int
+fgetline(FILE* fp, STRING** s)
+{
+    int     c       = 0;
+
+    size_t  length  = 0,
+            bufsiz  = T_STRING_DEFAULT_ALLOC_SIZE + 1;
+
+    char*   buf     = NULL;
+
+    if ((buf = (char*)
+                malloc(sizeof(char) * bufsiz)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memset(buf, '\0', bufsiz);
+    }
+    while ((c = fgetc(fp)) != EOF) {
+        if (length >= (bufsiz - 1)) {
+            bufsiz += T_STRING_DEFAULT_ALLOC_SIZE;
+            if ((buf = (char*)
+                        realloc(buf, sizeof(char) * bufsiz)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+                print_error();
+/* LIBRARY_VERBOSE */
+#endif
+                status = EMEMORYALLOC; goto ERR;
+            } else {
+                memset(buf + length, '\0', bufsiz - length);
+            }
+        }
+        *(buf + length) = c;
+        length++;
+        if (c == '\n') {
+            *(buf + length) = '\0';
+            break;
+        }
+    }
+    if ((*s = new_string(buf)) == NULL)
+        goto ERR;
+    if (buf != NULL) {
+        free(buf);
+        buf = NULL;
+    }
+
+    return 0;
+
+ERR:
+    if (buf != NULL) {
+        free(buf);
+        buf = NULL;
+    }
+
+    return status;
+}
+
 void
 release_char_arr(STRING* self, size_t n, char** arr)
 {
