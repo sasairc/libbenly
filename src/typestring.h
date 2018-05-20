@@ -17,11 +17,11 @@ extern "C" {
 /* __cplusplus */
 #endif
 
+#include <stdio.h>      /* FILE */
 #include <stddef.h>     /* size_t */
 
 #ifndef T_STRING_DEFAULT_ALLOC_SIZE
-#define T_STRING_DEFAULT_ALLOC_SIZE 1
-//#define T_STRING_DEFAULT_ALLOC_SIZE 1024
+#define T_STRING_DEFAULT_ALLOC_SIZE 1024
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
@@ -68,7 +68,7 @@ typedef struct STRING {
     STRING* (*substr)(STRING* self, size_t pos, size_t n);
     int     (*c_substr)(STRING* self, size_t pos, size_t n, char** dest);
     int     (*to_char_arr)(STRING* self, char*** dest);
-    int     (*compare)(STRING* self, struct STRING* opp);
+    int     (*compare)(STRING* self, STRING* opp);
     int     (*c_compare)(STRING* self, const char* s);
     int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
@@ -76,6 +76,7 @@ typedef struct STRING {
 } STRING;
 
 extern STRING* new_string(char* const str);
+extern int fgetline(FILE* fp, STRING** s);
 extern void release_char_arr(STRING* self, size_t n, char** arr);
 
 #ifdef  __cplusplus
