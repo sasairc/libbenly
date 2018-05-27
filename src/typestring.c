@@ -31,6 +31,7 @@
 static size_t size(STRING* self);
 static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
+static size_t count(STRING* self, char* const str);
 static int resize(STRING** self, size_t n, char const c);
 static int reserve(STRING** self, size_t s);
 static int shrink_to_fit(STRING** self);
@@ -83,6 +84,7 @@ STRING* new_string(char* const str)
         string->reserve         = reserve;
         string->shrink_to_fit   = shrink_to_fit;
         string->capacity        = capacity;
+        string->count           = count;
         string->assign          = assign;
         string->append          = append;
         string->push_back       = push_back;
@@ -329,6 +331,37 @@ static
 size_t capacity(STRING* self)
 {
     return self->alloc_size;
+}
+
+static
+size_t count(STRING* self, char* const str)
+{
+    size_t  n       = 0,
+            len     = 0;
+
+    char*   p       = NULL;
+
+    if (str == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
+    if (self->size(self) == 0) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if (self->size(self) <
+            (len = strlen(str)))
+        return 0;
+
+    p = self->c_str(self);
+    while (*p != '\0') {
+        if (memcmp(p, str, len) == 0)
+            n++;
+        p++;
+    }
+
+    return n;
+
+ERR:
+    return status;
 }
 
 static

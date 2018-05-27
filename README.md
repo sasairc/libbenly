@@ -463,6 +463,7 @@ typedef struct STRING {
     size_t  (*size)(STRING* self);
     size_t  (*mblen)(STRING* self);
     size_t  (*capacity)(STRING* self);
+    size_t  (*count)(STRING* self, char* const str);
     int     (*reserve)(STRING** self, size_t s);
     int     (*shrink_to_fit)(STRING** self);
     int     (*resize)(STRING** self, size_t n, char const c);
@@ -482,15 +483,16 @@ typedef struct STRING {
     STRING* (*substr)(STRING* self, size_t pos, size_t n);
     int     (*c_substr)(STRING* self, size_t pos, size_t n, char** dest);
     int     (*to_char_arr)(STRING* self, char*** dest);
-    int     (*compare)(STRING* self, struct STRING* opp);
+    int     (*compare)(STRING* self, STRING* opp);
     int     (*c_compare)(STRING* self, const char* s);
     int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;
 
-extern STRING* new_string(char* const str);
-extern void release_char_arr(STRING* self, size_t n, char** arr);
+STRING* new_string(char* const str);
+int fgetline(FILE* fp, STRING** s);
+void release_char_arr(STRING* self, size_t n, char** arr);
 ```
 
 The value in *string_errno* is significant only when the return value of the call indicated an error from most library functions.
