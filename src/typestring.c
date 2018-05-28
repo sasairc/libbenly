@@ -50,10 +50,13 @@ static char* c_str(STRING* self);
 static size_t copy(STRING* self, char** dest);
 static STRING* substr(STRING* self, size_t pos, size_t n);
 static int c_substr(STRING* self, size_t pos, size_t n, char** dest);
+static size_t split(STRING* self, char* const delim, STRING*** dest);
+static size_t c_split(STRING* self, char* const delim, char*** dest);
 static int to_char_arr(STRING* self, char*** dest);
 static int compare(STRING* self, STRING* opp);
 static int c_compare(STRING* self, const char* s);
 static int ascii_only(STRING* self);
+static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
 
@@ -99,6 +102,8 @@ STRING* new_string(char* const str)
         string->c_str           = c_str;
         string->substr          = substr;
         string->c_substr        = c_substr;
+        string->split           = split;
+        string->c_split         = c_split;
         string->to_char_arr     = to_char_arr;
         string->copy            = copy;
         string->compare         = compare;
@@ -353,9 +358,12 @@ size_t count(STRING* self, char* const str)
 
     p = self->c_str(self);
     while (*p != '\0') {
-        if (memcmp(p, str, len) == 0)
+        if (memcmp(p, str, len) == 0) {
             n++;
-        p++;
+            p += len;
+        } else {
+            p++;
+        }
     }
 
     return n;
@@ -673,6 +681,150 @@ ERR:
 }
 
 static
+size_t split(STRING* self, char* const delim, STRING*** dest)
+{
+    size_t  y       = 0,
+            idx     = 0;
+
+    char*   tok     = NULL,
+        *   tmp     = NULL;
+
+    if (delim == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
+    if (self->size(self) == 0) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((idx = self->count(self, delim)) == 0)
+        return 0;
+
+    if ((tmp = (char*)
+                malloc(sizeof(char) * (self->size(self) + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memcpy(tmp, self->c_str(self), self->size(self));
+        *(tmp + self->size(self)) = '\0';
+    }
+    if ((*dest = (STRING**)
+                malloc(sizeof(STRING*) * idx)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    }
+    tok = mbstrtok(tmp, delim);
+    while (tok != NULL) {
+        if ((*((*dest) + y) = new_string(tok))
+                == NULL)
+            goto ERR;
+        tok = mbstrtok(NULL, delim);
+        y++;
+    }
+    if (tmp != NULL) {
+        free(tmp);
+        tmp = NULL;
+    }
+
+    return idx;
+
+ERR:
+    if (tmp != NULL) {
+        free(tmp);
+        tmp = NULL;
+    }
+    if (*dest != NULL) {
+        y = 0;
+        while (y <= idx) {
+            self->release(*((*dest) + y));
+            *((*dest) + y) = NULL;
+            y++;
+        }
+        free(*dest);
+        *dest = NULL;
+    }
+
+    return status;
+}
+
+static
+size_t c_split(STRING* self, char* const delim, char*** dest)
+{
+    size_t  y       = 0,
+            len     = 0,
+            idx     = 0;
+
+    char*   tok     = NULL,
+        *   tmp     = NULL;
+
+    if (delim == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
+    if (self->size(self) == 0) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((idx = self->count(self, delim)) == 0)
+        return 0;
+
+    if ((tmp = (char*)
+                malloc(sizeof(char) * (self->size(self) + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memcpy(tmp, self->c_str(self), self->size(self));
+        *(tmp + self->size(self)) = '\0';
+    }
+    if ((*dest = (char**)
+                malloc(sizeof(char*) * idx)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    }
+    tok = mbstrtok(tmp, delim);
+    while (tok != NULL) {
+        len = strlen(tok);
+        if ((*((*dest) + y) = (char*)
+                    malloc(sizeof(char) * (len + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            status = EMEMORYALLOC; goto ERR;
+        } else {
+            memcpy(*((*dest) + y), tok, len);
+            *(*((*dest) + y) + len) = '\0';
+        }
+        tok = mbstrtok(NULL, delim);
+        y++;
+    }
+    if (tmp != NULL) {
+        free(tmp);
+        tmp = NULL;
+    }
+
+    return idx;
+
+ERR:
+    if (tmp != NULL) {
+        free(tmp);
+        tmp = NULL;
+    }
+    if (*dest != NULL)
+        release_char_arr(NULL, idx, *dest);
+
+    return status;
+}
+
+static
 int to_char_arr(STRING* self, char*** dest)
 {
     int     ch      = 0;
@@ -819,6 +971,28 @@ int is_in_range(STRING* self, size_t pos)
         return 0;
 
     return 1;
+}
+
+static
+char* mbstrtok(char* str, char* delim)
+{
+    static  char*   ptr = NULL;
+            char*   bdy = NULL;
+
+    if (!str)
+        str = ptr;
+
+    if (!str)
+        return NULL;
+
+    if ((bdy = strstr(str, delim)) != NULL) {
+        *bdy = '\0';
+        ptr = bdy + strlen(delim);
+    } else {
+        ptr = NULL;
+    }
+
+    return str;
 }
 
 static

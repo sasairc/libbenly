@@ -68,6 +68,8 @@ typedef struct STRING {
     size_t  (*copy)(STRING* self, char** dest);
     STRING* (*substr)(STRING* self, size_t pos, size_t n);
     int     (*c_substr)(STRING* self, size_t pos, size_t n, char** dest);
+    size_t  (*split)(STRING* self, char* const delim, STRING*** dest);
+    size_t  (*c_split)(STRING* self, char* const delim, char*** dest);
     int     (*to_char_arr)(STRING* self, char*** dest);
     int     (*compare)(STRING* self, STRING* opp);
     int     (*c_compare)(STRING* self, const char* s);
