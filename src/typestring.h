@@ -80,6 +80,7 @@ typedef struct STRING {
 
 extern STRING* new_string(char* const str);
 extern int fgetline(FILE* fp, STRING** s);
+extern int fputline(FILE* fp, STRING* s);
 extern void release_char_arr(STRING* self, size_t n, char** arr);
 
 #ifdef  __cplusplus

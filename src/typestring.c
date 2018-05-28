@@ -192,6 +192,19 @@ ERR:
     return status;
 }
 
+int 
+fputline(FILE* fp, STRING* s)
+{
+    if (fp == NULL || s == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    }
+
+    return fputs(s->c_str(s), fp);
+
+ERR:
+    return status;
+}
+
 void
 release_char_arr(STRING* self, size_t n, char** arr)
 {
