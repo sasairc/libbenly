@@ -73,6 +73,9 @@ typedef struct STRING {
     int     (*to_char_arr)(STRING* self, char*** dest);
     int     (*compare)(STRING* self, STRING* opp);
     int     (*c_compare)(STRING* self, const char* s);
+    size_t  (*chomp)(STRING** self);
+    size_t  (*lstrip)(STRING** self);
+    size_t  (*rstrip)(STRING** self);
     int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);

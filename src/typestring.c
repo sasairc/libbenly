@@ -55,6 +55,9 @@ static size_t c_split(STRING* self, char* const delim, char*** dest);
 static int to_char_arr(STRING* self, char*** dest);
 static int compare(STRING* self, STRING* opp);
 static int c_compare(STRING* self, const char* s);
+static size_t chomp(STRING** self);
+static size_t lstrip(STRING** self);
+static size_t rstrip(STRING** self);
 static int ascii_only(STRING* self);
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
@@ -108,6 +111,9 @@ STRING* new_string(char* const str)
         string->copy            = copy;
         string->compare         = compare;
         string->c_compare       = c_compare;
+        string->chomp           = chomp;
+        string->lstrip          = lstrip;
+        string->rstrip          = rstrip;
         string->ascii_only      = ascii_only;
         string->clear           = clear;
         string->release         = release;
@@ -933,6 +939,81 @@ int c_compare(STRING* self, const char* s)
 
 ERR:
     return status;
+}
+
+static
+size_t chomp(STRING** self)
+{
+    size_t  n   = 0;
+
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY;
+        return 0;
+    }
+    p = (*self)->c_str(*self) + (*self)->size(*self) - 1;
+    while ((*self)->size(*self) > 0 &&
+            (*p == '\r' || *p == '\n')) {
+        *p = '\0';
+        p--;
+        (*self)->length--;
+        n++;
+    }
+
+    return n;
+}
+
+static
+size_t lstrip(STRING** self)
+{
+    size_t  n   = 0;
+
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY;
+        return 0;
+    }
+    p = (*self)->c_str(*self);
+    while (*p != '\0' &&
+            (*p == '\t' || *p == '\n' || *p == '\v' ||
+             *p == '\f' || *p == '\r' || *p == ' ')) {
+        p++;
+        n++;
+    }
+    p = (*self)->c_str(*self);
+    if (n > 0) {
+        memmove(p, p + n, (*self)->size(*self) - n);
+        memset(p + (*self)->size(*self) - n, '\0', n);
+        (*self)->length -= n;
+    }
+
+    return n;
+}
+
+static
+size_t rstrip(STRING** self)
+{
+    size_t  n   = 0;
+
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY;
+        return 0;
+    }
+    p = (*self)->c_str(*self) + (*self)->size(*self) - 1;
+    while ((*self)->size(*self) > 0 &&
+            (*p == '\t' || *p == '\n' || *p == '\v' ||
+             *p == '\f' || *p == '\r' || *p == ' ')) {
+        *p = '\0';
+        p--;
+        (*self)->length--;
+        n++;
+    }
+
+    return n;
 }
 
 static
