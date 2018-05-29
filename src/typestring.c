@@ -710,6 +710,8 @@ size_t split(STRING* self, char* const delim, STRING*** dest)
     }
     if ((idx = self->count(self, delim)) == 0)
         return 0;
+    else
+        idx++;
 
     if ((tmp = (char*)
                 malloc(sizeof(char) * (self->size(self) + 1))) == NULL) {
@@ -752,7 +754,7 @@ ERR:
     }
     if (*dest != NULL) {
         y = 0;
-        while (y <= idx) {
+        while (y < idx) {
             self->release(*((*dest) + y));
             *((*dest) + y) = NULL;
             y++;
@@ -782,6 +784,8 @@ size_t c_split(STRING* self, char* const delim, char*** dest)
     }
     if ((idx = self->count(self, delim)) == 0)
         return 0;
+    else
+        idx++;
 
     if ((tmp = (char*)
                 malloc(sizeof(char) * (self->size(self) + 1))) == NULL) {
