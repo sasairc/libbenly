@@ -7,7 +7,7 @@ copy - STRING 構造体をコピーする
 ```c
 #include <benly/typestring.h>
 
-size_t s->copy(STRING* self, STRING** dest);
+int s->copy(STRING* self, STRING** dest);
 ```
 
 メンバ関数`copy()`は、`self`が管理する文字列を新たな STRING 構造体へ複製し、そのポインタを`dest`へセットする。
