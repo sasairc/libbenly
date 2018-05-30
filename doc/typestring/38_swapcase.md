@@ -1,0 +1,52 @@
+## 名前
+
+swapcase - STRING の小文字を大文字へ、大文字を小文字へ変換する
+
+## 書式
+
+```c
+#include <benly/typestring.h>
+
+int s->swapcase(STRING** self);
+```
+
+## 説明
+
+メンバ関数`swapcase()`は、`self`が管理する文字列のうち、全ての半角 ASCII 文字を小文字から大文字へ変換し、また大文字から小文字へ変換する。
+その他の文字は変換されず、そのままとなる。
+
+## 戻り値
+
+成功した場合は 0 を返す。
+エラーが発生した場合は負の整数を返し、`string_errno`にエラー原因を示す値を設定する。
+
+## エラー
+
+### ESTRISEMPTY
+
+`self`が管理する文字列が存在しない、またはサイズが 0 だった。
+
+## 例
+
+```c
+#include <benly/typestring.h>
+#include <stdio.h>
+
+int main(void)
+{
+    STRING* s   = new_string("OpenSSL");
+
+    s->swapcase(&s);
+    fprintf(stdout, "%s\n",
+            s->c_str(s));
+    s->release(s);
+
+    return 0;
+}
+```
+
+### 出力
+
+```
+oPENssl
+```
