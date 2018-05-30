@@ -25,12 +25,23 @@ extern "C" {
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
+#ifdef  T_STRING_LOCALE_VALUE
+#define T_STRING_LOCALE_VALUE   ""
+/* T_STRING_DEFAULT_LOCALE_VALUE */
+#endif
+
+/*
+ * typestring_errno
+ */
 #define EOUTOFRANGE         -1
 #define EINVALIDCHAR        -2
 #define EMEMORYALLOC        -3
 #define ESTRISEMPTY         -4
 #define EARGISNULPTR        -5
 
+/*
+ * string_errno check macros
+ */
 #define WOUTOFRANGE(x)      ((x) == EOUTOFRANGE)
 #define WINVALIDCHAR(x)     ((x) == EINVALIDCHAR)
 #define WMEORYALLOC(x)      ((x) == EMEMORYALLOC)
@@ -50,6 +61,7 @@ typedef struct STRING {
     size_t  (*mblen)(STRING* self);
     size_t  (*capacity)(STRING* self);
     size_t  (*count)(STRING* self, char* const str);
+    size_t  (*reconf)(STRING** self, size_t n);
     int     (*reserve)(STRING** self, size_t s);
     int     (*shrink_to_fit)(STRING** self);
     int     (*resize)(STRING** self, size_t n, char const c);
@@ -76,6 +88,12 @@ typedef struct STRING {
     size_t  (*chomp)(STRING** self);
     size_t  (*lstrip)(STRING** self);
     size_t  (*rstrip)(STRING** self);
+    int     (*downcase)(STRING** self);
+    int     (*upcase)(STRING** self);
+    int     (*swapcase)(STRING** self);
+    int     (*capitalize)(STRING** self);
+    int     (*include)(STRING* self, char* const str);
+    int     (*slice)(STRING** self, char* const str);
     int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);

@@ -32,6 +32,7 @@ static size_t size(STRING* self);
 static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
 static size_t count(STRING* self, char* const str);
+static size_t reconf(STRING** self, size_t n);
 static int resize(STRING** self, size_t n, char const c);
 static int reserve(STRING** self, size_t s);
 static int shrink_to_fit(STRING** self);
@@ -58,6 +59,12 @@ static int c_compare(STRING* self, const char* s);
 static size_t chomp(STRING** self);
 static size_t lstrip(STRING** self);
 static size_t rstrip(STRING** self);
+static int downcase(STRING** self);
+static int upcase(STRING** self);
+static int swapcase(STRING** self);
+static int capitalize(STRING** self);
+static int include(STRING* self, char* const str);
+static int slice(STRING** self, char* const str);
 static int ascii_only(STRING* self);
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
@@ -86,6 +93,7 @@ STRING* new_string(char* const str)
         string->string          = NULL;
         string->size            = size;
         string->mblen           = t_string_mblen;
+        string->reconf          = reconf;
         string->resize          = resize;
         string->reserve         = reserve;
         string->shrink_to_fit   = shrink_to_fit;
@@ -114,6 +122,12 @@ STRING* new_string(char* const str)
         string->chomp           = chomp;
         string->lstrip          = lstrip;
         string->rstrip          = rstrip;
+        string->downcase        = downcase;
+        string->swapcase        = swapcase;
+        string->upcase          = upcase;
+        string->capitalize      = capitalize;
+        string->include         = include;
+        string->slice           = slice;
         string->ascii_only      = ascii_only;
         string->clear           = clear;
         string->release         = release;
@@ -247,8 +261,12 @@ size_t t_string_mblen(STRING* self)
 
     size_t  c   = 0;
 
-    char*   p   = self->c_str(self);
+    char*   p   = NULL;
 
+    if (self->empty(self)) {
+        status = ESTRISEMPTY;
+    }
+    p = self->c_str(self);
     setlocale(LC_CTYPE, "");
     while (*p != '\0') {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
@@ -266,9 +284,19 @@ size_t t_string_mblen(STRING* self)
     return c;
 
 ERR:
-    status = EINVALIDCHAR;
 
     return 0;
+}
+
+static
+size_t reconf(STRING** self, size_t n)
+{
+    if (n)
+        (*self)->alloc_size = n;
+
+    (*self)->length = strlen((*self)->c_str(*self));
+
+    return (*self)->size(*self);
 }
 
 static
@@ -334,7 +362,8 @@ int shrink_to_fit(STRING** self)
     } else {
         (*self)->alloc_size = (*self)->length + 1;
         if (((*self)->string = (char*)
-                    realloc((*self)->string, sizeof(char) * (*self)->alloc_size)) == NULL) {
+                    realloc((*self)->string,
+                        sizeof(char) * (*self)->alloc_size)) == NULL) {
 #ifdef  LIBRARY_VERBOSE
             print_error();
 /* LIBRARY_VERBOSE */
@@ -368,7 +397,7 @@ size_t count(STRING* self, char* const str)
     if (str == NULL) {
         status = EARGISNULPTR; goto ERR;
     }
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if (self->size(self) <
@@ -492,7 +521,8 @@ int erase(STRING** self, size_t pos, size_t n)
         n = (*self)->size(*self) - pos;
 
     memmove((*self)->string + pos,
-            (*self)->string + pos + n, strlen((*self)->string + pos + n));
+            (*self)->string + pos + n,
+            strlen((*self)->string + pos + n));
     memset((*self)->string + (*self)->length - n, '\0', n);
     (*self)->length = strlen((*self)->c_str(*self));
 
@@ -532,7 +562,7 @@ ERR:
 static
 void pop_back(STRING** self)
 {
-    if ((*self)->length == 0) {
+    if ((*self)->empty(*self)) {
         status = ESTRISEMPTY;
     } else {
         (*self)->length -= 1;
@@ -594,7 +624,7 @@ char* c_str(STRING* self)
 static
 size_t copy(STRING* self, char** dest)
 {
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((*dest = (char*)
@@ -711,7 +741,7 @@ size_t split(STRING* self, char* const delim, STRING*** dest)
     if (delim == NULL) {
         status = EARGISNULPTR; goto ERR;
     }
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((idx = self->count(self, delim)) == 0)
@@ -758,7 +788,8 @@ ERR:
         free(tmp);
         tmp = NULL;
     }
-    if (*dest != NULL) {
+    if (dest != NULL &&
+            *dest != NULL) {
         y = 0;
         while (y < idx) {
             self->release(*((*dest) + y));
@@ -785,7 +816,7 @@ size_t c_split(STRING* self, char* const delim, char*** dest)
     if (delim == NULL) {
         status = EARGISNULPTR; goto ERR;
     }
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((idx = self->count(self, delim)) == 0)
@@ -841,7 +872,8 @@ ERR:
         free(tmp);
         tmp = NULL;
     }
-    if (*dest != NULL)
+    if (dest != NULL &&
+            *dest != NULL)
         release_char_arr(NULL, idx, *dest);
 
     return status;
@@ -856,7 +888,8 @@ int to_char_arr(STRING* self, char*** dest)
 
     char*   p       = self->c_str(self);
 
-    if (self->mblen(self) == 0) {
+    if (self->empty(self) ||
+            self->mblen(self) == 0) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((*dest = (char**)
@@ -907,7 +940,8 @@ ERR:
             break;
         case    EINVALIDCHAR:
         case    EMEMORYALLOC:
-            if (*dest != NULL)
+            if (dest != NULL ||
+                    *dest != NULL)
                 release_char_arr(self, 0, *dest);
             break;
     }
@@ -950,6 +984,7 @@ size_t chomp(STRING** self)
 
     if ((*self)->empty(*self)) {
         status = ESTRISEMPTY;
+
         return 0;
     }
     p = (*self)->c_str(*self) + (*self)->size(*self) - 1;
@@ -973,6 +1008,7 @@ size_t lstrip(STRING** self)
 
     if ((*self)->empty(*self)) {
         status = ESTRISEMPTY;
+
         return 0;
     }
     p = (*self)->c_str(*self);
@@ -1017,12 +1053,151 @@ size_t rstrip(STRING** self)
 }
 
 static
+int upcase(STRING** self)
+{
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0') {
+        if (islower(*p))
+            *p = toupper(*p);
+        p++;
+    }
+
+    return 0;
+}
+
+static
+int include(STRING* self, char* const str)
+{
+    size_t  pos     = 0,
+            len     = 0;
+
+    char*   p       = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (self->size(self) < (len = strlen(str)))
+        return (status = EOUTOFRANGE);
+
+    p = self->c_str(self);
+    while (*p != '\0' &&
+            pos <= (self->size(self) - len)) {
+        if (memcmp(p, str, len) == 0)
+            return 1;
+        pos++;
+        p++;
+    }
+
+    return 0;
+}
+
+static
+int capitalize(STRING** self)
+{
+    char*   p               = NULL;
+
+    int     (*f1)(int c)    = isascii,
+            (*f2)(int c)    = toupper;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0') {
+        if (f1(*p)) {
+            *p = f2(*p);
+            f1 = isascii;
+            f2 = tolower;
+        }
+        p++;
+    }
+
+    return 0;
+}
+
+static
+int downcase(STRING** self)
+{
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0') {
+        if (isupper(*p))
+            *p = tolower(*p);
+        p++;
+    }
+
+    return 0;
+}
+
+static
+int swapcase(STRING** self)
+{
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0') {
+        if (isupper(*p))
+            *p = tolower(*p);
+        else if (islower(*p))
+            *p = toupper(*p);
+        p++;
+    }
+
+    return 0;
+}
+
+static
+int slice(STRING** self, char* const str)
+{
+    size_t  pos     = 0,
+            len     = 0;
+
+    char*   p       = NULL;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+    if ((*self)->size(*self) < (len = strlen(str)))
+        return (status = EOUTOFRANGE);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0' &&
+            pos <= ((*self)->size(*self) - len)) {
+        if (memcmp(p, str, len) == 0) {
+            p = (*self)->c_str(*self);
+            memmove(p + pos, p + pos + len, (*self)->size(*self) - len);
+            memset(p + (*self)->size(*self) - len, '\0', len);
+            (*self)->length -= len;
+            break;
+        }
+        pos++;
+        p++;
+    }
+
+    return 0;
+}
+
+static
 int ascii_only(STRING* self)
 {
-    char*   p   = self->c_str(self);
+    char*   p   = NULL;
 
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+
+    p = self->c_str(self);
     while (*p != '\0') {
-        if (isascii(*p) == 0)
+        if (!isascii(*p))
             return 0;
         p++;
     }
