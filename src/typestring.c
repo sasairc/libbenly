@@ -368,7 +368,7 @@ size_t count(STRING* self, char* const str)
     if (str == NULL) {
         status = EARGISNULPTR; goto ERR;
     }
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if (self->size(self) <
@@ -594,7 +594,7 @@ char* c_str(STRING* self)
 static
 size_t copy(STRING* self, char** dest)
 {
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((*dest = (char*)
@@ -711,7 +711,7 @@ size_t split(STRING* self, char* const delim, STRING*** dest)
     if (delim == NULL) {
         status = EARGISNULPTR; goto ERR;
     }
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((idx = self->count(self, delim)) == 0)
@@ -758,7 +758,8 @@ ERR:
         free(tmp);
         tmp = NULL;
     }
-    if (*dest != NULL) {
+    if (dest != NULL &&
+            *dest != NULL) {
         y = 0;
         while (y < idx) {
             self->release(*((*dest) + y));
@@ -785,7 +786,7 @@ size_t c_split(STRING* self, char* const delim, char*** dest)
     if (delim == NULL) {
         status = EARGISNULPTR; goto ERR;
     }
-    if (self->size(self) == 0) {
+    if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((idx = self->count(self, delim)) == 0)
@@ -841,7 +842,8 @@ ERR:
         free(tmp);
         tmp = NULL;
     }
-    if (*dest != NULL)
+    if (dest != NULL &&
+            *dest != NULL)
         release_char_arr(NULL, idx, *dest);
 
     return status;
@@ -856,7 +858,8 @@ int to_char_arr(STRING* self, char*** dest)
 
     char*   p       = self->c_str(self);
 
-    if (self->mblen(self) == 0) {
+    if (self->empty(self) ||
+            self->mblen(self) == 0) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((*dest = (char**)
@@ -907,7 +910,8 @@ ERR:
             break;
         case    EINVALIDCHAR:
         case    EMEMORYALLOC:
-            if (*dest != NULL)
+            if (dest != NULL ||
+                    *dest != NULL)
                 release_char_arr(self, 0, *dest);
             break;
     }
