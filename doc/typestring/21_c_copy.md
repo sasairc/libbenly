@@ -1,19 +1,19 @@
 ## 名前
 
-copy - STRING から文字列をコピーする
+c_copy - STRING から文字列をコピーする
 
 ## 書式
 
 ```c
 #include <benly/typestring.h>
 
-size_t s->copy(STRING* self, char** dest);
+size_t s->c_copy(STRING* self, char** dest);
 ```
 
 ## 説明
 
-メンバ関数`copy()`は、`self`が管理する文字列を`dest`へ複製する。その際、末尾はNULL文字 ('\0') で終端される。
-`copy()`は、必要な大きさの配列を動的に確保し、その先頭アドレスを`dest`へ割り当てる。
+メンバ関数`c_copy()`は、`self`が管理する文字列を`dest`へ複製する。その際、末尾はNULL文字 ('\0') で終端される。
+`c_copy()`は、必要な大きさの配列を動的に確保し、その先頭アドレスを`dest`へ割り当てる。
 呼び出し側は、返されたバッファを`free()`すべきである。
 
 ## 戻り値
@@ -44,7 +44,7 @@ int main(void)
     STRING* s   = new_string("hello world");
 
     fprintf(stdout, "%zu\n",
-            s->copy(s, &p));
+            s->c_copy(s, &p));
     fprintf(stdout, "%s\n",
             p);
 

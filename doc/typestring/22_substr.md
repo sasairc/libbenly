@@ -7,12 +7,12 @@ substr - STRING から部分文字列の複製を行う
 ```c
 #include <benly/typestring.h>
 
-STRING* s->substr(STRING* self, size_t pos, size_t n);
+int s->substr(STRING* self, size_t pos, size_t n, STRING** dest);
 ```
 
 ## 説明
 
-メンバ関数`substr()`は、`self`が管理する文字列の指定位置`pos`番目から`n`要素を部分文字列として複製を行い、部分文字列を格納した新たな STRING 構造体へのポインタを返す。
+メンバ関数`substr()`は、`self`が管理する文字列の指定位置`pos`番目から`n`要素を部分文字列として複製を行い、部分文字列を格納した新たな STRING 構造体へのポインタを`dest`へセットする。
 `n`に対して 0 が与えられた場合、文字列の末尾まで複製を行う。
 
 指定位置`pos`として有効な値は、現在の領域内に限られる。
@@ -22,7 +22,8 @@ STRING* s->substr(STRING* self, size_t pos, size_t n);
 
 ## 戻り値
 
-成功した場合は新しい STRING 構造体へのポインタを返す。エラーが発生した場合には`NULL`を返し、`errno`並びに`string_errno`にエラー原因を示す値を設定する。
+成功した場合は 0 を返す。
+エラーが発生した場合は負の整数を返し、`errno`並びに`string_errno`にエラー原因を示す値を設定する。
 
 ## エラー
 
@@ -45,7 +46,7 @@ int main(void)
     STRING* s1  = new_string("ソーニャ 折部やすな 呉織あぎり"),
           * s2  = NULL;
 
-    s2 = s1->substr(s1, 13, 15);
+    s1->substr(s1, 13, 15, &s2);
     fprintf(stdout, "%s\n",
             s2->c_str(s2));
 
