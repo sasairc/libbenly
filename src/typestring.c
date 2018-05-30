@@ -32,6 +32,7 @@ static size_t size(STRING* self);
 static size_t t_string_mblen(STRING* self);
 static size_t capacity(STRING* self);
 static size_t count(STRING* self, char* const str);
+static size_t reconf(STRING** self, size_t n);
 static int resize(STRING** self, size_t n, char const c);
 static int reserve(STRING** self, size_t s);
 static int shrink_to_fit(STRING** self);
@@ -86,6 +87,7 @@ STRING* new_string(char* const str)
         string->string          = NULL;
         string->size            = size;
         string->mblen           = t_string_mblen;
+        string->reconf          = reconf;
         string->resize          = resize;
         string->reserve         = reserve;
         string->shrink_to_fit   = shrink_to_fit;
@@ -269,6 +271,17 @@ ERR:
     status = EINVALIDCHAR;
 
     return 0;
+}
+
+static
+size_t reconf(STRING** self, size_t n)
+{
+    if (0 < n)
+        (*self)->alloc_size = n;
+
+    (*self)->length = strlen((*self)->c_str(*self));
+
+    return (*self)->size(*self);
 }
 
 static
