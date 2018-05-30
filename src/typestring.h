@@ -77,8 +77,9 @@ typedef struct STRING {
     char    (*front)(STRING* self);
     char    (*back)(STRING* self);
     char*   (*c_str)(STRING* self);
-    size_t  (*copy)(STRING* self, char** dest);
-    STRING* (*substr)(STRING* self, size_t pos, size_t n);
+    int     (*copy)(STRING* self, STRING** dest);
+    size_t  (*c_copy)(STRING* self, char** dest);
+    int     (*substr)(STRING* self, size_t pos, size_t n, STRING** dest);
     int     (*c_substr)(STRING* self, size_t pos, size_t n, char** dest);
     size_t  (*split)(STRING* self, char* const delim, STRING*** dest);
     size_t  (*c_split)(STRING* self, char* const delim, char*** dest);

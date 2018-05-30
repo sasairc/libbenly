@@ -48,8 +48,9 @@ static char at(STRING* self, size_t pos);
 static char front(STRING* self);
 static char back(STRING* self);
 static char* c_str(STRING* self);
-static size_t copy(STRING* self, char** dest);
-static STRING* substr(STRING* self, size_t pos, size_t n);
+static int copy(STRING* self, STRING** dest);
+static size_t c_copy(STRING* self, char** dest);
+static int substr(STRING* self, size_t pos, size_t n, STRING** dest);
 static int c_substr(STRING* self, size_t pos, size_t n, char** dest);
 static size_t split(STRING* self, char* const delim, STRING*** dest);
 static size_t c_split(STRING* self, char* const delim, char*** dest);
@@ -117,6 +118,7 @@ STRING* new_string(char* const str)
         string->c_split         = c_split;
         string->to_char_arr     = to_char_arr;
         string->copy            = copy;
+        string->c_copy          = c_copy;
         string->compare         = compare;
         string->c_compare       = c_compare;
         string->chomp           = chomp;
@@ -264,7 +266,7 @@ size_t t_string_mblen(STRING* self)
     char*   p   = NULL;
 
     if (self->empty(self)) {
-        status = ESTRISEMPTY;
+        status = ESTRISEMPTY; goto ERR;
     }
     p = self->c_str(self);
     setlocale(LC_CTYPE, "");
@@ -284,7 +286,6 @@ size_t t_string_mblen(STRING* self)
     return c;
 
 ERR:
-
     return 0;
 }
 
@@ -587,7 +588,7 @@ void swap(STRING** s1, STRING** s2)
 static
 int empty(STRING* self)
 {
-    return !self->length;
+    return !self->size(self);
 }
 
 static
@@ -598,7 +599,7 @@ char at(STRING* self, size_t pos)
     if (!is_in_range(self, pos))
         status = EOUTOFRANGE;
     else
-        c = *(self->string + pos - 1);
+        c = *(self->c_str(self) + pos - 1);
 
     return c;
 }
@@ -606,13 +607,13 @@ char at(STRING* self, size_t pos)
 static
 char front(STRING* self)
 {
-    return *(self->string);
+    return *(self->c_str(self));
 }
 
 static
 char back(STRING* self)
 {
-    return *(self->string + self->length - 1);
+    return *(self->c_str(self) + self->size(self) - 1);
 }
 
 static
@@ -622,24 +623,48 @@ char* c_str(STRING* self)
 }
 
 static
-size_t copy(STRING* self, char** dest)
+int copy(STRING* self, STRING** dest)
+{
+    if (self->empty(self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((*dest = new_string(NULL)) == NULL)
+        goto ERR;
+    if ((*dest)->reserve(dest, self->capacity(self) - 1) < 0)
+        goto ERR;
+    if ((*dest)->assign(dest, self->c_str(self)) < 0)
+        goto ERR;
+
+    return 0;
+
+ERR:
+    if (*dest != NULL) {
+        (*dest)->release(*dest);
+        *dest = NULL;
+    }
+
+    return status;
+}
+
+static
+size_t c_copy(STRING* self, char** dest)
 {
     if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
     if ((*dest = (char*)
-                malloc(sizeof(char) * (self->length + 1))) == NULL) {
+                malloc(sizeof(char) * (self->size(self) + 1))) == NULL) {
 #ifdef  LIBRARY_VERBOSE
         print_error();
 /* LIBRARY_VERBOSE */
 #endif
         status = EMEMORYALLOC; goto ERR;
     } else {
-        memcpy(*dest, self->string, self->length);
-        *((*dest) + self->length) = '\0';
+        memcpy(*dest, self->c_str(self), self->size(self));
+        *((*dest) + self->size(self)) = '\0';
     }
 
-    return self->length + 1;
+    return self->size(self) + 1;
 
 ERR:
     switch (status) {
@@ -652,45 +677,45 @@ ERR:
 }
 
 static
-STRING* substr(STRING* self, size_t pos, size_t n)
+int substr(STRING* self, size_t pos, size_t n, STRING** dest)
 {
-    STRING*     s   = NULL;
-
     if (n == 0)
         n = self->size(self) - pos;
 
     if (!is_in_range(self, pos) ||
-            !is_in_range(self, pos + n)){
+            !is_in_range(self, pos + n)) {
         status = EOUTOFRANGE; goto ERR;
     }
 
-    if ((s = new_string(NULL)) == NULL) {
+    if ((*dest = new_string(NULL)) == NULL) {
         status = EMEMORYALLOC; goto ERR;
     } else {
-        s->length = n;
+        (*dest)->length = n;
     }
-    if (allocate_memory(&s, s->length + 1) < 0) {
+    if ((*dest)->reserve(dest, (*dest)->size(*dest)) < 0) {
         status = EMEMORYALLOC; goto ERR;
     } else {
-        memcpy(s->string, self->string + pos, s->length);
-        *(s->string + s->length) = '\0';
+        memcpy((*dest)->c_str(*dest),
+                self->c_str(self) + pos, (*dest)->size(*dest));
+        *((*dest)->string + (*dest)->size(*dest)) = '\0';
     }
 
-    return s;
+    return 0;
 
 ERR:
     switch (status) {
+        case    ESTRISEMPTY:
         case    EOUTOFRANGE:
             break;
         case    EMEMORYALLOC:
-            if (s != NULL) {
-                s->release(s);
-                s = NULL;
+            if (*dest != NULL) {
+                (*dest)->release(*dest);
+                *dest = NULL;
             }
             break;
     }
 
-    return NULL;
+    return status;
 }
 
 static
@@ -712,7 +737,7 @@ int c_substr(STRING* self, size_t pos, size_t n, char** dest)
 #endif
         status = EMEMORYALLOC; goto ERR;
     } else {
-        memcpy(*dest, self->string + pos, n);
+        memcpy(*dest, self->c_str(self) + pos, n);
         *((*dest) + n) = '\0';
     }
 
@@ -720,8 +745,8 @@ int c_substr(STRING* self, size_t pos, size_t n, char** dest)
 
 ERR:
     switch (status) {
+        case    ESTRISEMPTY:
         case    EOUTOFRANGE:
-            break;
         case    EMEMORYALLOC:
             break;
     }
@@ -952,6 +977,9 @@ ERR:
 static
 int compare(STRING* self, STRING* opp)
 {
+    if (opp == NULL)
+        return (status = EARGISNULPTR);
+
     if ((self->size(self) != opp->size(opp)) ||
             (memcmp(self->c_str(self), opp->c_str(opp), self->size(self)) != 0))
         return 1;
@@ -962,17 +990,14 @@ int compare(STRING* self, STRING* opp)
 static
 int c_compare(STRING* self, const char* s)
 {
-    if (s == NULL) {
-        status = EARGISNULPTR; goto ERR;
-    }
+    if (s == NULL)
+        return (status = EARGISNULPTR);
+
     if ((self->size(self) != strlen(s)) ||
             (memcmp(self->c_str(self), s, self->size(self)) != 0))
         return 1;
 
     return 0;
-
-ERR:
-    return status;
 }
 
 static
@@ -984,7 +1009,6 @@ size_t chomp(STRING** self)
 
     if ((*self)->empty(*self)) {
         status = ESTRISEMPTY;
-
         return 0;
     }
     p = (*self)->c_str(*self) + (*self)->size(*self) - 1;
@@ -1008,7 +1032,6 @@ size_t lstrip(STRING** self)
 
     if ((*self)->empty(*self)) {
         status = ESTRISEMPTY;
-
         return 0;
     }
     p = (*self)->c_str(*self);
