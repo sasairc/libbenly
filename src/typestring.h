@@ -95,6 +95,9 @@ typedef struct STRING {
     int     (*capitalize)(STRING** self);
     int     (*include)(STRING* self, char* const str);
     int     (*slice)(STRING** self, char* const str);
+    int     (*to_i)(STRING* self, int base);
+    long    (*to_l)(STRING* self, int base);
+    float   (*to_f)(STRING* self);
     int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
