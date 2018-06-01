@@ -69,6 +69,7 @@ static int slice(STRING** self, char* const str);
 static int to_i(STRING* self, int base);
 static long to_l(STRING* self, int base);
 static float to_f(STRING* self);
+static int reverse(STRING** self);
 static int ascii_only(STRING* self);
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
@@ -136,6 +137,7 @@ STRING* new_string(char* const str)
         string->to_i            = to_i;
         string->to_l            = to_l;
         string->to_f            = to_f;
+        string->reverse         = reverse;
         string->ascii_only      = ascii_only;
         string->clear           = clear;
         string->release         = release;
@@ -1249,6 +1251,59 @@ float to_f(STRING* self)
         return (status = ESTRISEMPTY);
 
     return atof(self->c_str(self));
+}
+
+static
+int reverse(STRING** self)
+{
+    int     ch      = 0;
+
+    size_t  pos     = 0;
+
+    char*   p       = NULL,
+        *   dest    = NULL;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((dest = (char*)
+                malloc(sizeof(char) * (*self)->capacity(*self))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memset(dest, '\0', (*self)->capacity(*self));
+    }
+    p = (*self)->c_str(*self);
+    pos = (*self)->size(*self);
+    setlocale(LC_CTYPE, "");
+    while (*p != '\0' && pos) {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            status = EINVALIDCHAR; goto ERR;
+        } else {
+            pos -= ch;
+            memcpy(dest + pos, p, ch);
+            p += ch;
+        }
+    }
+    free((*self)->string);
+    (*self)->string = dest;
+
+    return 0;
+
+ERR:
+    if (dest != NULL) {
+        free(dest);
+        dest = NULL;
+    }
+
+    return status;
 }
 
 static
