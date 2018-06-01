@@ -98,6 +98,7 @@ typedef struct STRING {
     int     (*to_i)(STRING* self, int base);
     long    (*to_l)(STRING* self, int base);
     float   (*to_f)(STRING* self);
+    int     (*reverse)(STRING** self);
     int     (*ascii_only)(STRING* self);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
