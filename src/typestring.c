@@ -66,6 +66,9 @@ static int swapcase(STRING** self);
 static int capitalize(STRING** self);
 static int include(STRING* self, char* const str);
 static int slice(STRING** self, char* const str);
+static int to_i(STRING* self, int base);
+static long to_l(STRING* self, int base);
+static float to_f(STRING* self);
 static int ascii_only(STRING* self);
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
@@ -130,6 +133,9 @@ STRING* new_string(char* const str)
         string->capitalize      = capitalize;
         string->include         = include;
         string->slice           = slice;
+        string->to_i            = to_i;
+        string->to_l            = to_l;
+        string->to_f            = to_f;
         string->ascii_only      = ascii_only;
         string->clear           = clear;
         string->release         = release;
@@ -1208,6 +1214,41 @@ int slice(STRING** self, char* const str)
     }
 
     return 0;
+}
+
+static
+int to_i(STRING* self, int base)
+{
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+
+    if (base <= 0)
+        base = 10;
+    errno = 0;
+
+    return (int)strtol(self->c_str(self), NULL, base);
+}
+
+static
+long to_l(STRING* self, int base)
+{
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+
+    if (base <= 0)
+        base = 10;
+    errno = 0;
+
+    return strtol(self->c_str(self), NULL, base);
+}
+
+static
+float to_f(STRING* self)
+{
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+
+    return atof(self->c_str(self));
 }
 
 static
