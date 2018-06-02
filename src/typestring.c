@@ -204,6 +204,9 @@ fgetline(FILE* fp, STRING** s)
             break;
         }
     }
+    if (!length && c == EOF) {
+        status = EOF; goto IS_EOF;
+    }
     if ((*s = new_string(buf)) == NULL)
         goto ERR;
     if (buf != NULL) {
@@ -214,6 +217,7 @@ fgetline(FILE* fp, STRING** s)
     return 0;
 
 ERR:
+IS_EOF:
     if (buf != NULL) {
         free(buf);
         buf = NULL;
