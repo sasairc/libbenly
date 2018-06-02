@@ -18,7 +18,8 @@ int fgetline(FILE* fp, STRING** s);
 
 ## 戻り値
 
-成功した場合は 0 を返す。エラーが発生した場合は負の整数を返し、`errno`並びに`string_errno`にエラー原因を示す値を設定する。
+成功した場合は 0 を返す。また、ファイルの終端に達した場合は EOF を返す。
+エラーが発生した場合は負の整数を返し、`errno`並びに`string_errno`にエラー原因を示す値を設定する。
 
 ## エラー
 
@@ -39,8 +40,7 @@ int main(void)
     FILE*   fp  = NULL;
 
     fp = fopen("/usr/lib/os-release", "r");
-    while (!feof(fp)) {
-        fgetline(fp, &s);
+    while (fgetline(fp, &s) != EOF) {
         fprintf(stdout, "%s",
                 s->c_str(s));
         s->release(s);
