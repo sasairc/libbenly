@@ -37,7 +37,7 @@ int s->mbcenter(STRING** self, size_t s, char c);
 
 ## 例
 
-```
+```c
 #include <benly/typestring.h>
 #include <stdio.h>
 
