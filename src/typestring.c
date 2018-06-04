@@ -72,6 +72,8 @@ static int swapcase(STRING** self);
 static int capitalize(STRING** self);
 static int include(STRING* self, char* const str);
 static int slice(STRING** self, char* const str);
+static int delete_prefix(STRING** self, char* const str);
+static int delete_suffix(STRING** self, char* const str);
 static int to_i(STRING* self, int base);
 static long to_l(STRING* self, int base);
 static float to_f(STRING* self);
@@ -147,6 +149,8 @@ STRING* new_string(char* const str)
         string->capitalize      = capitalize;
         string->include         = include;
         string->slice           = slice;
+        string->delete_prefix   = delete_prefix;
+        string->delete_suffix   = delete_suffix;
         string->to_i            = to_i;
         string->to_l            = to_l;
         string->to_f            = to_f;
@@ -294,7 +298,7 @@ size_t t_string_mblen(STRING* self)
         status = ESTRISEMPTY; goto ERR;
     }
     p = self->c_str(self);
-    setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
     while (*p != '\0') {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
 #ifdef  LIBRARY_VERBOSE
@@ -426,8 +430,8 @@ size_t count(STRING* self, char* const str)
     if (self->empty(self)) {
         status = ESTRISEMPTY; goto ERR;
     }
-    if (self->size(self) <
-            (len = strlen(str)))
+    if (self->size(self) < (len = strlen(str)) ||
+            !len)
         return 0;
 
     p = self->c_str(self);
@@ -960,7 +964,7 @@ int to_char_arr(STRING* self, char*** dest)
         }
     }
 
-    setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
     y = 0;
     while (*p != '\0' && y < self->mblen(self)) {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
@@ -1323,7 +1327,8 @@ int include(STRING* self, char* const str)
 
     if (self->empty(self))
         return (status = ESTRISEMPTY);
-    if (self->size(self) < (len = strlen(str)))
+    if (self->size(self) < (len = strlen(str)) ||
+            !len)
         return (status = EOUTOFRANGE);
 
     p = self->c_str(self);
@@ -1410,7 +1415,8 @@ int slice(STRING** self, char* const str)
 
     if ((*self)->empty(*self))
         return (status = ESTRISEMPTY);
-    if ((*self)->size(*self) < (len = strlen(str)))
+    if ((*self)->size(*self) < (len = strlen(str)) ||
+            !len)
         return (status = EOUTOFRANGE);
 
     p = (*self)->c_str(*self);
@@ -1428,6 +1434,55 @@ int slice(STRING** self, char* const str)
     }
 
     return 0;
+}
+
+static
+int delete_prefix(STRING** self, char* const str)
+{
+    size_t  len = 0;
+
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+    if ((*self)->size(*self) < (len = strlen(str)) ||
+            !len)
+        return 0;
+
+    p = (*self)->c_str(*self);
+    if (memcmp(p, str, len) == 0) {
+        memmove(p, p + len, (*self)->size(*self) - len);
+        memset(p + (*self)->size(*self) - len, '\0', len);
+        (*self)->length -= len;
+    } else {
+        return 0;
+    }
+
+    return 1;
+}
+
+static
+int delete_suffix(STRING** self, char* const str)
+{
+    size_t  len = 0;
+
+    char*   p   = NULL;
+
+    if ((*self)->empty(*self))
+        return (status = ESTRISEMPTY);
+    if ((*self)->size(*self) < (len = strlen(str)) ||
+            !len)
+        return 0;
+
+    p = (*self)->c_str(*self) + (*self)->size(*self) - len;
+    if (memcmp(p, str, len) == 0) {
+        memset(p, '\0', len);
+        (*self)->length -= len;
+    } else {
+        return 0;
+    }
+
+    return 1;
 }
 
 static
@@ -1490,7 +1545,7 @@ int reverse(STRING** self)
     }
     p = (*self)->c_str(*self);
     pos = (*self)->size(*self);
-    setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
     while (*p != '\0' && pos) {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
 #ifdef  LIBRARY_VERBOSE
@@ -1584,7 +1639,7 @@ int count_mb_witdh(STRING* self, size_t* s)
 
     char*   p   = self->c_str(self);
 
-    setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
     while (*p != '\0') {
         if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
 #ifdef  LIBRARY_VERBOSE

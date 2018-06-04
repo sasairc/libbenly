@@ -25,7 +25,7 @@ extern "C" {
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
-#ifdef  T_STRING_LOCALE_VALUE
+#ifndef  T_STRING_LOCALE_VALUE
 #define T_STRING_LOCALE_VALUE   ""
 /* T_STRING_DEFAULT_LOCALE_VALUE */
 #endif
@@ -101,6 +101,8 @@ typedef struct STRING {
     int     (*capitalize)(STRING** self);
     int     (*include)(STRING* self, char* const str);
     int     (*slice)(STRING** self, char* const str);
+    int     (*delete_prefix)(STRING** self, char* const str);
+    int     (*delete_suffix)(STRING** self, char* const str);
     int     (*to_i)(STRING* self, int base);
     long    (*to_l)(STRING* self, int base);
     float   (*to_f)(STRING* self);
