@@ -60,6 +60,12 @@ static int c_compare(STRING* self, const char* s);
 static size_t chomp(STRING** self);
 static size_t lstrip(STRING** self);
 static size_t rstrip(STRING** self);
+static int rjust(STRING** self, size_t s, char c);
+static int ljust(STRING** self, size_t s, char c);
+static int center(STRING** self, size_t s, char c);
+static int mbrjust(STRING** self, size_t s, char c);
+static int mbljust(STRING** self, size_t s, char c);
+static int mbcenter(STRING** self, size_t s, char c);
 static int downcase(STRING** self);
 static int upcase(STRING** self);
 static int swapcase(STRING** self);
@@ -76,6 +82,7 @@ static void clear(STRING** self);
 static void release(STRING* self);
 
 static int is_in_range(STRING* self, size_t pos);
+static int count_mb_witdh(STRING* self, size_t* s);
 static int allocate_memory(STRING** self, size_t size);
 static int reallocate_memory(STRING** self, size_t size);
 
@@ -128,6 +135,12 @@ STRING* new_string(char* const str)
         string->chomp           = chomp;
         string->lstrip          = lstrip;
         string->rstrip          = rstrip;
+        string->rjust           = rjust;
+        string->ljust           = ljust;
+        string->center          = center;
+        string->mbrjust         = mbrjust;
+        string->mbljust         = mbljust;
+        string->mbcenter        = mbcenter;
         string->downcase        = downcase;
         string->swapcase        = swapcase;
         string->upcase          = upcase;
@@ -553,6 +566,9 @@ ERR:
 static
 int push_back(STRING** self, char const c)
 {
+    if (c == '\0')
+        return 0;
+
     if (reallocate_memory(self, sizeof(c) + 1) < 0) {
         status = EMEMORYALLOC; goto ERR;
     } else {
@@ -1088,6 +1104,196 @@ size_t rstrip(STRING** self)
 }
 
 static
+int rjust(STRING** self, size_t s, char c)
+{
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((*self)->size(*self) >= s)
+        return 0;
+
+    if (c == '\0')
+        c = ' ';
+    if (reallocate_memory(self, s + 1) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memmove((*self)->c_str(*self) + s - (*self)->size(*self),
+                (*self)->c_str(*self),
+                (*self)->size(*self));
+        memset((*self)->c_str(*self), c, s - (*self)->size(*self));
+        *((*self)->c_str(*self) + s) = '\0';
+        (*self)->length = s;
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
+int ljust(STRING** self, size_t s, char c)
+{
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((*self)->size(*self) >= s)
+        return 0;
+
+    if (c == '\0')
+        c = ' ';
+    if (reallocate_memory(self, s + 1) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memset((*self)->c_str(*self) + (*self)->size(*self),
+                c,
+                s - (*self)->size(*self));
+        *((*self)->c_str(*self) + s) = '\0';
+        (*self)->length = s;
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
+int center(STRING** self, size_t s, char c)
+{
+    size_t  s2  = 0;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if ((*self)->size(*self) >= s)
+        return 0;
+
+    if (c == '\0')
+        c = ' ';
+    s2 = (s - (*self)->size(*self)) >> 1;
+    if (reallocate_memory(self, s + 1) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memmove((*self)->c_str(*self) + s2,
+                (*self)->c_str(*self),
+                (*self)->size(*self));
+        memset((*self)->c_str(*self), c, s2);
+        memset((*self)->c_str(*self) + (*self)->size(*self) + s2,
+                c,
+                s2 + (s - (*self)->size(*self)) % 2);
+        *((*self)->c_str(*self) + s) = '\0';
+        (*self)->length = s;
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
+int mbrjust(STRING** self, size_t s, char c)
+{
+    size_t  s2  = 0;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if (count_mb_witdh(*self, &s2) < 0)
+        return (status = EINVALIDCHAR);
+    if (s <= s2)
+        return 0;
+    else
+        s2 = s - s2;
+
+    if (reallocate_memory(self, s + s2 + 1) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memmove((*self)->c_str(*self) + s2,
+                (*self)->c_str(*self),
+                (*self)->size(*self));
+        memset((*self)->c_str(*self), c, s2);
+        (*self)->length += s2;
+        *((*self)->c_str(*self) + (*self)->size(*self)) = '\0';
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
+int mbljust(STRING** self, size_t s, char c)
+{
+    size_t  s2  = 0;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if (count_mb_witdh(*self, &s2) < 0)
+        return (status = EINVALIDCHAR);
+    if (s <= s2)
+        return 0;
+    else
+        s2 = s - s2;
+
+    if (c == '\0')
+        c = ' ';
+    if (reallocate_memory(self, s + s2 + 1) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memset((*self)->c_str(*self) + (*self)->size(*self),
+                c,
+                s2);
+        (*self)->length += s2;
+        *((*self)->c_str(*self) + (*self)->size(*self)) = '\0';
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
+int mbcenter(STRING** self, size_t s, char c)
+{
+    size_t  ps  = 0,
+            s2  = 0;
+
+    if ((*self)->empty(*self)) {
+        status = ESTRISEMPTY; goto ERR;
+    }
+    if (count_mb_witdh(*self, &s2) < 0)
+        return (status = EINVALIDCHAR);
+    if (s <= s2)
+        return 0;
+
+    ps = s2;
+    s2 = (s - s2) >> 1;
+    if (c == '\0')
+        c = ' ';
+    if (reallocate_memory(self, s + (s - s2) + 1) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memmove((*self)->c_str(*self) + s2,
+                (*self)->c_str(*self),
+                (*self)->size(*self));
+        memset((*self)->c_str(*self), c, s2);
+        memset((*self)->c_str(*self) + s2, c, (s - s2) % 2);
+        (*self)->length += ps;
+        *((*self)->c_str(*self) + (*self)->size(*self)) = '\0';
+    }
+
+    return 0;
+
+ERR:
+    return status;
+}
+
+static
 int upcase(STRING** self)
 {
     char*   p   = NULL;
@@ -1367,6 +1573,32 @@ int is_in_range(STRING* self, size_t pos)
         return 0;
 
     return 1;
+}
+
+static
+int count_mb_witdh(STRING* self, size_t* s)
+{
+    int     ch  = 0;
+
+    char*   p   = self->c_str(self);
+
+    setlocale(LC_CTYPE, "");
+    while (*p != '\0') {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            return (status = EINVALIDCHAR);
+        }
+        if (ch > 1)
+            (*s) += 2;
+        else
+            (*s)++;
+        p += ch;
+    }
+
+    return 0;
 }
 
 static
