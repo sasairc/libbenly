@@ -519,6 +519,7 @@ typedef struct STRING {
     float   (*to_f)(STRING* self);
     int     (*reverse)(STRING** self);
     int     (*ascii_only)(STRING* self);
+    int     (*each_line)(STRING* self, char* const delim, void (*fn)(STRING*));
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;

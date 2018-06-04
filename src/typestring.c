@@ -79,6 +79,7 @@ static long to_l(STRING* self, int base);
 static float to_f(STRING* self);
 static int reverse(STRING** self);
 static int ascii_only(STRING* self);
+static int each_line(STRING* self, char* const delim, void (*fn)(STRING*));
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
@@ -156,6 +157,7 @@ STRING* new_string(char* const str)
         string->to_f            = to_f;
         string->reverse         = reverse;
         string->ascii_only      = ascii_only;
+        string->each_line       = each_line;
         string->clear           = clear;
         string->release         = release;
     }
@@ -1589,6 +1591,37 @@ int ascii_only(STRING* self)
     }
 
     return 1;
+}
+
+static
+int each_line(STRING* self, char* const delim, void (*fn)(STRING*))
+{
+    size_t      i   = 0,
+                idx = 0;
+
+    char*       dd  = "\n"; /* default delimiter */
+
+    STRING**    s2  = NULL;
+
+    if (fn == NULL)
+        return (status = EARGISNULPTR);
+
+    if (delim != NULL)
+        dd = delim;
+
+    status = 0;
+    idx = self->split(self, dd, &s2);
+    if (status < 0)
+        return status;
+
+    while (i < idx) {
+        fn(s2[i]);
+        free(s2[i]);
+        i++;
+    }
+    free(s2);
+
+    return 0;
 }
 
 static
