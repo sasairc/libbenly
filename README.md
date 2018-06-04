@@ -492,6 +492,12 @@ typedef struct STRING {
     size_t  (*chomp)(STRING** self);
     size_t  (*lstrip)(STRING** self);
     size_t  (*rstrip)(STRING** self);
+    int     (*rjust)(STRING** self, size_t s, char c);
+    int     (*ljust)(STRING** self, size_t s, char c);
+    int     (*center)(STRING** self, size_t s, char c);
+    int     (*mbrjust)(STRING** self, size_t s, char c);
+    int     (*mbljust)(STRING** self, size_t s, char c);
+    int     (*mbcenter)(STRING** self, size_t s, char c);
     int     (*downcase)(STRING** self);
     int     (*upcase)(STRING** self);
     int     (*swapcase)(STRING** self);
