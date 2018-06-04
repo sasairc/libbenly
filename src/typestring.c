@@ -1282,8 +1282,10 @@ int mbcenter(STRING** self, size_t s, char c)
                 (*self)->c_str(*self),
                 (*self)->size(*self));
         memset((*self)->c_str(*self), c, s2);
-        memset((*self)->c_str(*self) + s2, c, (s - s2) % 2);
-        (*self)->length += ps;
+        memset((*self)->c_str(*self) + (*self)->size(*self) + s2,
+                c,
+                s2 + (s - ps) % 2);
+        (*self)->length = strlen((*self)->c_str(*self));
         *((*self)->c_str(*self) + (*self)->size(*self)) = '\0';
     }
 
