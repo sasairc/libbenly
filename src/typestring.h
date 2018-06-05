@@ -20,6 +20,11 @@ extern "C" {
 #include <stdio.h>      /* FILE */
 #include <stddef.h>     /* size_t */
 
+#ifdef  WITH_GLIB
+#include <glib.h>
+/* WITH_GLIB */
+#endif
+
 #ifndef T_STRING_DEFAULT_ALLOC_SIZE
 #define T_STRING_DEFAULT_ALLOC_SIZE 1024
 /* T_STRING_DEFAULT_ALLOC_SIZE */
@@ -111,6 +116,10 @@ typedef struct STRING {
     int     (*each_line)(STRING* self, char* const delim, void (*fn)(STRING*));
     int     (*each_byte)(STRING* self, void (*fn)(char));
     int     (*each_char)(STRING* self, void (*fn)(char*));
+#ifdef  WITH_GLIB
+    int     (*each_codepoint)(STRING* self, void (*fn)(gunichar));
+/* WITH_GLIB */
+#endif
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;
