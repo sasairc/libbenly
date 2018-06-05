@@ -110,6 +110,7 @@ typedef struct STRING {
     int     (*ascii_only)(STRING* self);
     int     (*each_line)(STRING* self, char* const delim, void (*fn)(STRING*));
     int     (*each_byte)(STRING* self, void (*fn)(char));
+    int     (*each_char)(STRING* self, void (*fn)(char*));
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;
