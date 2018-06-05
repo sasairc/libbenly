@@ -80,6 +80,7 @@ static float to_f(STRING* self);
 static int reverse(STRING** self);
 static int ascii_only(STRING* self);
 static int each_line(STRING* self, char* const delim, void (*fn)(STRING*));
+static int each_byte(STRING* self, void (*fn)(char));
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
@@ -158,6 +159,7 @@ STRING* new_string(char* const str)
         string->reverse         = reverse;
         string->ascii_only      = ascii_only;
         string->each_line       = each_line;
+        string->each_byte       = each_byte;
         string->clear           = clear;
         string->release         = release;
     }
@@ -1620,6 +1622,24 @@ int each_line(STRING* self, char* const delim, void (*fn)(STRING*))
         i++;
     }
     free(s2);
+
+    return 0;
+}
+
+int each_byte(STRING* self, void (*fn)(char))
+{
+    char*   p   = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (fn == NULL)
+        return (status = EARGISNULPTR);
+
+    p = self->c_str(self);
+    while (*p != '\0') {
+        fn(*p);
+        p++;
+    }
 
     return 0;
 }
