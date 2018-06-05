@@ -81,6 +81,7 @@ static int reverse(STRING** self);
 static int ascii_only(STRING* self);
 static int each_line(STRING* self, char* const delim, void (*fn)(STRING*));
 static int each_byte(STRING* self, void (*fn)(char));
+static int each_char(STRING* self, void (*fn)(char*));
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
@@ -160,6 +161,7 @@ STRING* new_string(char* const str)
         string->ascii_only      = ascii_only;
         string->each_line       = each_line;
         string->each_byte       = each_byte;
+        string->each_char       = each_char;
         string->clear           = clear;
         string->release         = release;
     }
@@ -1626,6 +1628,7 @@ int each_line(STRING* self, char* const delim, void (*fn)(STRING*))
     return 0;
 }
 
+static
 int each_byte(STRING* self, void (*fn)(char))
 {
     char*   p   = NULL;
@@ -1640,6 +1643,33 @@ int each_byte(STRING* self, void (*fn)(char))
         fn(*p);
         p++;
     }
+
+    return 0;
+}
+
+static
+int each_char(STRING* self, void (*fn)(char*))
+{
+    size_t  y   = 0,
+            idx = 0;
+
+    char**  arr = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (fn == NULL)
+        return (status = EARGISNULPTR);
+
+    if ((self)->to_char_arr(self, &arr) < 0)
+        return status;
+
+    idx = self->mblen(self);
+    while (y < idx) {
+        fn(arr[y]);
+        free(arr[y]);
+        y++;
+    }
+    free(arr);
 
     return 0;
 }
