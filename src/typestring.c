@@ -18,6 +18,11 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef  WITH_GLIB
+#include <glib.h>
+/* WITH_GLIB */
+#endif
+
 /*
  * @ LIBRARY_LIBRARY_VERBOSE
  * displaying system call errors
@@ -82,6 +87,10 @@ static int ascii_only(STRING* self);
 static int each_line(STRING* self, char* const delim, void (*fn)(STRING*));
 static int each_byte(STRING* self, void (*fn)(char));
 static int each_char(STRING* self, void (*fn)(char*));
+#ifdef  WITH_GLIB
+static int each_codepoint(STRING* self, void (*fn)(gunichar));
+/* WITH_GLIB */
+#endif
 static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
@@ -162,6 +171,10 @@ STRING* new_string(char* const str)
         string->each_line       = each_line;
         string->each_byte       = each_byte;
         string->each_char       = each_char;
+#ifdef  WITH_GLIB
+        string->each_codepoint  = each_codepoint;
+/* WITH_GLIB */
+#endif
         string->clear           = clear;
         string->release         = release;
     }
@@ -1674,6 +1687,42 @@ int each_char(STRING* self, void (*fn)(char*))
     return 0;
 }
 
+#ifdef  WITH_GLIB
+static
+int each_codepoint(STRING* self, void (*fn)(gunichar))
+{
+    int         ch  = 0;
+
+    char*       p   = NULL;
+
+    gunichar*   cp  = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (fn == NULL)
+        return (status = EARGISNULPTR);
+
+    p = self->c_str(self);
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
+    while (*p != '\0') {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            return (status = EINVALIDCHAR);
+        }
+        cp = g_utf8_to_ucs4_fast(p, sizeof(*p), NULL);
+        fn(*cp);
+        g_free(cp);
+        p += ch;
+    }
+
+    return 0;
+}
+/* WITH_GLIB */
+#endif
+
 static
 void clear(STRING** self)
 {
@@ -1715,6 +1764,41 @@ int is_in_range(STRING* self, size_t pos)
     return 1;
 }
 
+#ifdef  WITH_GLIB
+static
+int count_mb_witdh(STRING* self, size_t* s)
+{
+    int         ch  = 0;
+
+    char*       p   = self->c_str(self);
+
+    gunichar*   cp  = NULL;
+
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
+    while (*p != '\0') {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            return (status = EINVALIDCHAR);
+        }
+        if (ch > 1) {
+            cp = g_utf8_to_ucs4_fast(p, sizeof(*p), NULL);
+            if ((*cp >= 0xff65 && *cp <= 0xff9f))
+                (*s)++;
+            else
+                (*s) += 2;
+            g_free(cp);
+        } else {
+            (*s)++;
+        }
+        p += ch;
+    }
+
+    return 0;
+}
+#else
 static
 int count_mb_witdh(STRING* self, size_t* s)
 {
@@ -1740,6 +1824,8 @@ int count_mb_witdh(STRING* self, size_t* s)
 
     return 0;
 }
+/* WITH_GLIB */
+#endif
 
 static
 char* mbstrtok(char* str, char* delim)
