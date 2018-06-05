@@ -432,6 +432,14 @@ int strmax_with_regex(int val, char** src, regex_t* reg);
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
+#ifndef  T_STRING_LOCALE_VALUE
+#define T_STRING_LOCALE_VALUE   ""
+/* T_STRING_DEFAULT_LOCALE_VALUE */
+#endif
+
+/*
+ * typestring_errno
+ */
 #define EOUTOFRANGE         -1
 #define EINVALIDCHAR        -2
 #define EMEMORYALLOC        -3
@@ -504,15 +512,17 @@ typedef struct STRING {
     int     (*capitalize)(STRING** self);
     int     (*include)(STRING* self, char* const str);
     int     (*slice)(STRING** self, char* const str);
+    int     (*delete_prefix)(STRING** self, char* const str);
+    int     (*delete_suffix)(STRING** self, char* const str);
     int     (*to_i)(STRING* self, int base);
     long    (*to_l)(STRING* self, int base);
     float   (*to_f)(STRING* self);
     int     (*reverse)(STRING** self);
     int     (*ascii_only)(STRING* self);
+    int     (*each_line)(STRING* self, char* const delim, void (*fn)(STRING*));
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;
-
 
 STRING* new_string(char* const str);
 int fgetline(FILE* fp, STRING** s);
