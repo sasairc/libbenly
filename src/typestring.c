@@ -173,6 +173,8 @@ STRING* new_string(char* const str)
         string->each_char       = each_char;
 #ifdef  WITH_GLIB
         string->each_codepoint  = each_codepoint;
+#else
+        string->each_codepoint  = NULL;
 /* WITH_GLIB */
 #endif
         string->clear           = clear;
