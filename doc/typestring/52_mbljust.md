@@ -16,6 +16,8 @@ int s->mbljust(STRING** self, size_t s, char c);
 `c`に対して NULL 文字 ('\0') を与えた場合は、既定値として半角スペースが用いられる。
 また、`s`の長さ (表示幅) が操作後と同じになる場合は何も行わない。
 
+ライブラリが *WITH_GLIB* としてビルドされている場合は、正常に半角カタカナを扱う事ができる。
+
 ## 戻り値
 
 成功した場合は 0 を返す。
@@ -45,17 +47,20 @@ int main(void)
 {
     STRING* s1  = new_string("ソーニャ"),
           * s2  = new_string("折部やすな"), /* 2 (幅) * 5 (文字数) */
-          * s3  = new_string("呉織あぎり");
+          * s3  = new_string("呉織あぎり"),
+          * s4  = new_string("ｷﾙﾐｰﾍﾞｲﾍﾞｰ");
 
     s1->mbljust(&s1, 16, '*');
     s2->mbljust(&s2, 16, '*');
     s3->mbljust(&s3, 16, '*');
-    fprintf(stdout, "%s\n%s\n%s\n",
-            s1->c_str(s1), s2->c_str(s2), s3->c_str(s3));
+    s4->mbljust(&s4, 16, '*');
+    fprintf(stdout, "%s\n%s\n%s\n%s\n",
+            s1->c_str(s1), s2->c_str(s2), s3->c_str(s3), s4->c_str(s4));
 
     s1->release(s1);
     s2->release(s2);
     s3->release(s3);
+    s3->release(s4);
 
     return 0;
 }
@@ -67,4 +72,5 @@ int main(void)
 ソーニャ********
 折部やすな******
 呉織あぎり******
+ｷﾙﾐｰﾍﾞｲﾍﾞｰ******
 ```
