@@ -1,6 +1,6 @@
 ## 名前
 
-each_char - STRING から1文字ずつコードポイントを取得する
+each_codepoint - STRING から1文字ずつコードポイントを取得する
 
 ## 書式
 
