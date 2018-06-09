@@ -79,6 +79,7 @@ typedef struct STRING {
     void    (*swap)(STRING** s1, STRING** s2);
     int     (*insert)(STRING** self, size_t pos, char* const str);
     int     (*erase)(STRING** self, size_t pos, size_t n);
+    int     (*replace)(STRING** self, size_t pos, size_t n, char* const str);
     int     (*empty)(STRING* self);
     char    (*at)(STRING* self, size_t pos);
     char    (*front)(STRING* self);
