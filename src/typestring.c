@@ -13,6 +13,7 @@
 #include "./typestring.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <locale.h>
 #include <string.h>
@@ -88,7 +89,7 @@ static int each_line(STRING* self, char* const delim, void (*fn)(STRING*));
 static int each_byte(STRING* self, void (*fn)(char));
 static int each_char(STRING* self, void (*fn)(char*));
 #ifdef  WITH_GLIB
-static int each_codepoint(STRING* self, void (*fn)(gunichar));
+static int each_codepoint(STRING* self, void (*fn)(uint32_t));
 /* WITH_GLIB */
 #endif
 static char* mbstrtok(char* str, char* delim);
@@ -1691,7 +1692,7 @@ int each_char(STRING* self, void (*fn)(char*))
 
 #ifdef  WITH_GLIB
 static
-int each_codepoint(STRING* self, void (*fn)(gunichar))
+int each_codepoint(STRING* self, void (*fn)(uint32_t))
 {
     int         ch  = 0;
 
