@@ -7,7 +7,7 @@ each_codepoint - STRING から1文字ずつコードポイントを取得する
 ```c
 #include <benly/typestring.h>
 
-int s->each_codepoint(STRING* self, void (*fn)(gunichar))
+int s->each_codepoint(STRING* self, void (*fn)(uint32_t))
 ```
 
 ## 説明
@@ -36,9 +36,8 @@ int s->each_codepoint(STRING* self, void (*fn)(gunichar))
 ```c
 #include <benly/typestring.h>
 #include <stdio.h>
-#include <glib.h>
 
-void sub(gunichar cp)
+void sub(uint32_t cp)
 {
     fprintf(stdout, "%x\n",
             cp);
