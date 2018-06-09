@@ -19,6 +19,7 @@ extern "C" {
 
 #include <stdio.h>      /* FILE */
 #include <stddef.h>     /* size_t */
+#include <stdint.h>     /* uint32_t */
 
 #ifdef  WITH_GLIB
 #include <glib.h>
@@ -116,7 +117,7 @@ typedef struct STRING {
     int     (*each_line)(STRING* self, char* const delim, void (*fn)(STRING*));
     int     (*each_byte)(STRING* self, void (*fn)(char));
     int     (*each_char)(STRING* self, void (*fn)(char*));
-    int     (*each_codepoint)(STRING* self, void (*fn)(gunichar));
+    int     (*each_codepoint)(STRING* self, void (*fn)(uint32_t));
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;
