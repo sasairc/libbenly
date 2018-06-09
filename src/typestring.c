@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <ctype.h>
 #include <locale.h>
 #include <string.h>
@@ -63,6 +64,10 @@ static size_t c_split(STRING* self, char* const delim, char*** dest);
 static int to_char_arr(STRING* self, char*** dest);
 static int compare(STRING* self, STRING* opp);
 static int c_compare(STRING* self, const char* s);
+static int casecmp(STRING* self, STRING* opp);
+static int c_casecmp(STRING* self, char* const s);
+static int concat(STRING** self, STRING* opp, ...);
+static int c_concat(STRING** self, char* const s, ...);
 static size_t chomp(STRING** self);
 static size_t lstrip(STRING** self);
 static size_t rstrip(STRING** self);
@@ -147,6 +152,10 @@ STRING* new_string(char* const str)
         string->c_copy          = c_copy;
         string->compare         = compare;
         string->c_compare       = c_compare;
+        string->casecmp         = casecmp;
+        string->c_casecmp       = c_casecmp;
+        string->concat          = concat;
+        string->c_concat        = c_concat;
         string->chomp           = chomp;
         string->lstrip          = lstrip;
         string->rstrip          = rstrip;
@@ -1052,6 +1061,118 @@ int c_compare(STRING* self, const char* s)
         return 1;
 
     return 0;
+}
+
+static
+int casecmp(STRING* self, STRING* opp)
+{
+    int     cmp = 0;
+
+    STRING* s1  = NULL,
+          * s2  = NULL;
+
+    if (opp == NULL)
+        return (status = EARGISNULPTR);
+
+    if (self->copy(self, &s1) < 0 ||
+            opp->copy(opp, &s2) < 0)
+        goto ERR;
+
+    s1->downcase(&s1);
+    s2->downcase(&s2);
+    cmp = s1->compare(s1, s2);
+    s1->release(s1);
+    s2->release(s2);
+
+    return cmp;
+
+ERR:
+    if (s1 != NULL)
+        s1->release(s1);
+    if (s2 != NULL)
+        s2->release(s2);
+
+    return status;
+}
+
+static
+int c_casecmp(STRING* self, char* const s)
+{
+    int     cmp = 0;
+
+    STRING* s1  = NULL,
+          * s2  = NULL;
+
+    if (s == NULL)
+        return (status = EARGISNULPTR);
+
+    if (self->copy(self, &s1) < 0 ||
+            ((s2 = new_string(s)) == NULL))
+        goto ERR;
+
+    s1->downcase(&s1);
+    s2->downcase(&s2);
+    cmp = s1->compare(s1, s2);
+    s1->release(s1);
+    s2->release(s2);
+
+    return cmp;
+
+ERR:
+    if (s1 != NULL)
+        s1->release(s1);
+    if (s2 != NULL)
+        s2->release(s2);
+
+    return status;
+}
+
+static
+int concat(STRING** self, STRING* opp, ...)
+{
+    STRING* p   = NULL;
+
+    va_list list;
+
+    va_start(list, opp);
+    p = opp;
+    while (p != NULL) {
+        if ((*self)->append(self, p->c_str(p)) < 0)
+            goto ERR;
+        p = va_arg(list, STRING*);
+    }
+    va_end(list);
+
+    return 0;
+
+ERR:
+    va_end(list);
+
+    return status;
+}
+
+static
+int c_concat(STRING** self, char* const s, ...)
+{
+    char*   p   = NULL;
+
+    va_list list;
+
+    va_start(list, s);
+    p = s;
+    while (p != NULL) {
+        if ((*self)->append(self, p) < 0)
+            goto ERR;
+        p = va_arg(list, char* const);
+    }
+    va_end(list);
+
+    return 0;
+
+ERR:
+    va_end(list);
+
+    return status;
 }
 
 static

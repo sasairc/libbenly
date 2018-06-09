@@ -497,6 +497,10 @@ typedef struct STRING {
     int     (*to_char_arr)(STRING* self, char*** dest);
     int     (*compare)(STRING* self, STRING* opp);
     int     (*c_compare)(STRING* self, const char* s);
+    int     (*casecmp)(STRING* self, STRING* opp);
+    int     (*c_casecmp)(STRING* self, char* const s);
+    int     (*concat)(STRING** self, STRING* opp, ...);
+    int     (*c_concat)(STRING** self, char* const s, ...);
     size_t  (*chomp)(STRING** self);
     size_t  (*lstrip)(STRING** self);
     size_t  (*rstrip)(STRING** self);
