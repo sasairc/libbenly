@@ -47,6 +47,7 @@ static int assign(STRING** self, char* const str);
 static int append(STRING** self, char* const str);
 static int insert(STRING** self, size_t pos, char* const str);
 static int erase(STRING** self, size_t pos, size_t n);
+static int replace(STRING** self, size_t pos, size_t n, char* const str);
 static int push_back(STRING** self, char const c);
 static void pop_back(STRING** self);
 static void swap(STRING** s1, STRING** s2);
@@ -138,6 +139,7 @@ STRING* new_string(char* const str)
         string->swap            = swap;
         string->insert          = insert;
         string->erase           = erase;
+        string->replace         = replace;
         string->at              = at;
         string->empty           = empty;
         string->front           = front;
@@ -596,6 +598,21 @@ ERR:
     }
 
     return status;
+}
+
+static
+int replace(STRING** self, size_t pos, size_t n, char* const str)
+{
+    if (str == NULL)
+        return (status = EARGISNULPTR);
+
+    if ((*self)->erase(self, pos, n) < 0)
+        return status;
+
+    if ((*self)->insert(self, pos, str) < 0)
+        return status;
+
+    return 0;
 }
 
 static
