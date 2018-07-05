@@ -45,21 +45,21 @@ int s->mbindex(STRING* self, char* const str, size_t pos, size_t* idx);
 
 int main(void)
 {
-	size_t	idx		= 0;
+    size_t  idx     = 0;
 
-	STRING* s		= new_string("神戸県神戸市");
+    STRING* s       = new_string("神戸県神戸市");
 
-	s->mbindex(s, "戸", 0, &idx);
-	fprintf(stdout, "%zu\n",
-			idx);
+    s->mbindex(s, "戸", 0, &idx);
+    fprintf(stdout, "%zu\n",
+            idx);
 
-	s->mbindex(s, "戸", 2, &idx);
-	fprintf(stdout, "%zu\n",
-			idx);
+    s->mbindex(s, "戸", 2, &idx);
+    fprintf(stdout, "%zu\n",
+            idx);
 
-	s->release(s);
+    s->release(s);
 
-	return 0;
+    return 0;
 }
 ```
 
