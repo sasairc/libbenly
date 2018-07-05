@@ -36,7 +36,7 @@
 #endif
 
 static size_t size(STRING* self);
-static size_t t_string_mblen(STRING* self);
+static size_t ts_mblen(STRING* self);
 static size_t capacity(STRING* self);
 static size_t count(STRING* self, char* const str);
 static size_t reconf(STRING** self, size_t n);
@@ -83,6 +83,8 @@ static int upcase(STRING** self);
 static int swapcase(STRING** self);
 static int capitalize(STRING** self);
 static int include(STRING* self, char* const str);
+static int ts_index(STRING* self, char* const str, size_t pos, size_t* idx);
+static int mbindex(STRING* self, char* const str, size_t pos, size_t* idx);
 static int slice(STRING** self, char* const str);
 static int delete_prefix(STRING** self, char* const str);
 static int delete_suffix(STRING** self, char* const str);
@@ -125,7 +127,7 @@ STRING* new_string(char* const str)
         string->length          = 0;
         string->string          = NULL;
         string->size            = size;
-        string->mblen           = t_string_mblen;
+        string->mblen           = ts_mblen;
         string->reconf          = reconf;
         string->resize          = resize;
         string->reserve         = reserve;
@@ -172,6 +174,8 @@ STRING* new_string(char* const str)
         string->upcase          = upcase;
         string->capitalize      = capitalize;
         string->include         = include;
+        string->index           = ts_index;
+        string->mbindex         = mbindex;
         string->slice           = slice;
         string->delete_prefix   = delete_prefix;
         string->delete_suffix   = delete_suffix;
@@ -319,7 +323,7 @@ size_t size(STRING* self)
 }
 
 static
-size_t t_string_mblen(STRING* self)
+size_t ts_mblen(STRING* self)
 {
     int     ch  = 0;
 
@@ -1501,6 +1505,73 @@ int include(STRING* self, char* const str)
     }
 
     return 0;
+}
+
+static
+int ts_index(STRING* self, char* const str, size_t pos, size_t* idx)
+{
+    size_t  len     = 0;
+
+    char*   p       = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (str == NULL || idx == NULL)
+        return (status = EARGISNULPTR);
+    if (!is_in_range(self, pos) ||
+            !is_in_range(self, pos + (len = strlen(str))))
+        return (status = EOUTOFRANGE);
+
+    p = self->c_str(self) + (*idx = pos);
+    while (*p != '\0' &&
+            *idx <= (self->size(self) - len)) {
+        if (memcmp(p, str, len) == 0)
+            return 0;
+        (*idx)++;
+        p++;
+    }
+    /* not found */
+    *idx = 0;
+
+    return -1;
+}
+
+static
+int mbindex(STRING* self, char* const str, size_t pos, size_t* idx)
+{
+    int     ch      = 0;
+
+    size_t  len     = 0;
+
+    char*   p       = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (str == NULL || idx == NULL)
+        return (status = EARGISNULPTR);
+
+    len = strlen(str);
+    p = self->c_str(self);
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
+    while (*p != '\0') {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            return (status = EINVALIDCHAR);
+        }
+        if (pos)
+            pos--;
+        else if (memcmp(p, str, len) == 0)
+            return 0;
+        p += ch;
+        (*idx)++;
+    }
+    /* not found */
+    *idx = 0;
+
+    return -1;
 }
 
 static
