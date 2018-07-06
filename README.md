@@ -432,7 +432,7 @@ int strmax_with_regex(int val, char** src, regex_t* reg);
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
-#ifndef  T_STRING_LOCALE_VALUE
+#ifndef T_STRING_LOCALE_VALUE
 #define T_STRING_LOCALE_VALUE   ""
 /* T_STRING_DEFAULT_LOCALE_VALUE */
 #endif
@@ -517,7 +517,9 @@ typedef struct STRING {
     int     (*capitalize)(STRING** self);
     int     (*include)(STRING* self, char* const str);
     int     (*index)(STRING* self, char* const str, size_t pos, size_t* idx);
+    int     (*rindex)(STRING* self, char* const str, size_t pos, size_t* idx);
     int     (*mbindex)(STRING* self, char* const str, size_t pos, size_t* idx);
+    int     (*mbrindex)(STRING* self, char* const str, size_t pos, size_t* idx);
     int     (*slice)(STRING** self, char* const str);
     int     (*delete_prefix)(STRING** self, char* const str);
     int     (*delete_suffix)(STRING** self, char* const str);
@@ -533,6 +535,12 @@ typedef struct STRING {
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 } STRING;
+
+extern STRING* new_string(char* const str);
+extern int fgetline(FILE* fp, STRING** s);
+extern int fputline(FILE* fp, STRING* s);
+extern void release_char_arr(STRING* self, size_t n, char** arr);
+
 
 STRING* new_string(char* const str);
 int fgetline(FILE* fp, STRING** s);
