@@ -32,7 +32,7 @@ extern "C" {
 /* T_STRING_DEFAULT_ALLOC_SIZE */
 #endif
 
-#ifndef  T_STRING_LOCALE_VALUE
+#ifndef T_STRING_LOCALE_VALUE
 #define T_STRING_LOCALE_VALUE   ""
 /* T_STRING_DEFAULT_LOCALE_VALUE */
 #endif
@@ -113,7 +113,9 @@ typedef struct STRING {
     int     (*capitalize)(STRING** self);
     int     (*include)(STRING* self, char* const str);
     int     (*index)(STRING* self, char* const str, size_t pos, size_t* idx);
+    int     (*rindex)(STRING* self, char* const str, size_t pos, size_t* idx);
     int     (*mbindex)(STRING* self, char* const str, size_t pos, size_t* idx);
+    int     (*mbrindex)(STRING* self, char* const str, size_t pos, size_t* idx);
     int     (*slice)(STRING** self, char* const str);
     int     (*delete_prefix)(STRING** self, char* const str);
     int     (*delete_suffix)(STRING** self, char* const str);
