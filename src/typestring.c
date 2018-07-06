@@ -102,11 +102,13 @@ static int each_char(STRING* self, void (*fn)(char*));
 static int each_codepoint(STRING* self, void (*fn)(uint32_t));
 /* WITH_GLIB */
 #endif
-static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
 
+static size_t mbstrlen(char* const str);
+static char* mbstrtok(char* str, char* delim);
 static int is_in_range(STRING* self, size_t pos);
+static int mb_is_in_range(STRING* self, size_t pos);
 static int count_mb_witdh(STRING* self, size_t* s);
 static int allocate_memory(STRING** self, size_t size);
 static int reallocate_memory(STRING** self, size_t size);
@@ -1584,6 +1586,8 @@ int mbindex(STRING* self, char* const str, size_t pos, size_t* idx)
         return (status = ESTRISEMPTY);
     if (str == NULL || idx == NULL)
         return (status = EARGISNULPTR);
+    if (!mb_is_in_range(self, pos))
+        return (status = EOUTOFRANGE);
 
     len = strlen(str);
     p = self->c_str(self);
@@ -1623,6 +1627,8 @@ int mbrindex(STRING* self, char* const str, size_t pos, size_t* idx)
         return (status = ESTRISEMPTY);
     if (str == NULL || idx == NULL)
         return (status = EARGISNULPTR);
+    if (!mb_is_in_range(self, pos))
+        return (status = EOUTOFRANGE);
 
     len = strlen(str);
     *idx = self->mblen(self) - 1;
@@ -2054,6 +2060,15 @@ int is_in_range(STRING* self, size_t pos)
     return 1;
 }
 
+static
+int mb_is_in_range(STRING* self, size_t pos)
+{
+    if (self->mblen(self) < pos)
+        return 0;
+
+    return 1;
+}
+
 #ifdef  WITH_GLIB
 static
 int count_mb_witdh(STRING* self, size_t* s)
@@ -2116,6 +2131,40 @@ int count_mb_witdh(STRING* self, size_t* s)
 }
 /* WITH_GLIB */
 #endif
+
+static
+size_t mbstrlen(char* const str)
+{
+    int     ch      = 0;
+
+    size_t  c       = 0;
+
+    char*   p       = NULL;
+
+    if (str == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    } else {
+        p = str;
+    }
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
+    while (*p != '\0') {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            status = EINVALIDCHAR; goto ERR;
+        } else {
+            p += ch;
+            c++;
+        }
+    }
+
+    return c;
+
+ERR:
+    return 0;
+}
 
 static
 char* mbstrtok(char* str, char* delim)
