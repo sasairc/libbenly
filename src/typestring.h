@@ -45,6 +45,7 @@ extern "C" {
 #define EMEMORYALLOC        -3
 #define ESTRISEMPTY         -4
 #define EARGISNULPTR        -5
+#define ESTRNOTFOUND        -6
 
 /*
  * string_errno check macros
@@ -54,6 +55,7 @@ extern "C" {
 #define WMEORYALLOC(x)      ((x) == EMEMORYALLOC)
 #define WSTRISEMPTY(x)      ((x) == ESTRISEMPTY)
 #define WEARGISNULPTR(x)    ((x) == EARGISNULPTR)
+#define WSTRNOTFOUND(x)     ((x) == ESTRNOTFOUND)
 
 extern int* wrap_type_string_errno(void);
 #define string_errno    (*wrap_type_string_errno())
@@ -89,6 +91,8 @@ typedef struct STRING {
     size_t  (*c_copy)(STRING* self, char** dest);
     int     (*substr)(STRING* self, size_t pos, size_t n, STRING** dest);
     int     (*c_substr)(STRING* self, size_t pos, size_t n, char** dest);
+    int     (*partition)(STRING* self, char* const str, STRING*** dest);
+    int     (*c_partition)(STRING* self, char* const str, char*** dest);
     size_t  (*split)(STRING* self, char* const delim, STRING*** dest);
     size_t  (*c_split)(STRING* self, char* const delim, char*** dest);
     int     (*to_char_arr)(STRING* self, char*** dest);
@@ -130,6 +134,11 @@ typedef struct STRING {
     int     (*each_codepoint)(STRING* self, void (*fn)(uint32_t));
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
+
+    /*
+     * おまけ
+     */
+    size_t  (*mbstrlen)(char* const str);
 } STRING;
 
 extern STRING* new_string(char* const str);

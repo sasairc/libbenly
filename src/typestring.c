@@ -60,6 +60,8 @@ static int copy(STRING* self, STRING** dest);
 static size_t c_copy(STRING* self, char** dest);
 static int substr(STRING* self, size_t pos, size_t n, STRING** dest);
 static int c_substr(STRING* self, size_t pos, size_t n, char** dest);
+static int partition(STRING* self, char* const str, STRING*** dest);
+static int c_partition(STRING* self, char* const str, char*** dest);
 static size_t split(STRING* self, char* const delim, STRING*** dest);
 static size_t c_split(STRING* self, char* const delim, char*** dest);
 static int to_char_arr(STRING* self, char*** dest);
@@ -102,11 +104,13 @@ static int each_char(STRING* self, void (*fn)(char*));
 static int each_codepoint(STRING* self, void (*fn)(uint32_t));
 /* WITH_GLIB */
 #endif
-static char* mbstrtok(char* str, char* delim);
 static void clear(STRING** self);
 static void release(STRING* self);
 
+static size_t mbstrlen(char* const str);
+static char* mbstrtok(char* str, char* delim);
 static int is_in_range(STRING* self, size_t pos);
+static int mb_is_in_range(STRING* self, size_t pos);
 static int count_mb_witdh(STRING* self, size_t* s);
 static int allocate_memory(STRING** self, size_t size);
 static int reallocate_memory(STRING** self, size_t size);
@@ -151,6 +155,8 @@ STRING* new_string(char* const str)
         string->c_str           = c_str;
         string->substr          = substr;
         string->c_substr        = c_substr;
+        string->partition       = partition;
+        string->c_partition     = c_partition;
         string->split           = split;
         string->c_split         = c_split;
         string->to_char_arr     = to_char_arr;
@@ -199,6 +205,11 @@ STRING* new_string(char* const str)
 #endif
         string->clear           = clear;
         string->release         = release;
+
+        /*
+         * おまけ
+         */
+        string->mbstrlen        = mbstrlen;
     }
     if (str != NULL) {
         if (string->assign(&string, str) < 0) {
@@ -840,6 +851,142 @@ ERR:
     }
 
     return status;
+}
+
+static
+int partition(STRING* self, char* const str, STRING*** dest)
+{
+    size_t      idx     = 0,
+                len     = 0;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (str == NULL)
+        return (status = EARGISNULPTR);
+    if ((len = strlen(str)) > self->size(self))
+        return (status = EOUTOFRANGE);
+    if (self->index(self, str, 0, &idx) < 0)
+        return (status = ESTRNOTFOUND);
+
+    if ((*dest = (STRING**)
+                malloc(sizeof(STRING*) * 2)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        return (status = EMEMORYALLOC);
+    }
+
+    if ((*(*dest) = new_string(NULL)) == NULL ||
+            (*(*dest + 1) = new_string(NULL)) == NULL) {
+        status = EMEMORYALLOC; goto ERR;
+    }
+
+    if ((*(*dest))->reserve(*dest, self->capacity(self)) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memcpy((*(*dest))->c_str(*(*dest)),
+                self->c_str(self), idx);
+        *((*(*dest))->c_str(*(*dest)) + idx) = '\0';
+        (*(*dest))->reconf(*dest, 0);
+    }
+
+    if ((*(*dest + 1))->reserve(*dest + 1, self->capacity(self)) < 0) {
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memcpy((*(*dest + 1))->c_str(*(*dest + 1)),
+                self->c_str(self) + idx + len,
+                self->size(self) - idx - len);
+        *((*(*dest + 1))->c_str(*(*dest + 1)) +
+                self->size(self) - idx - len) = '\0';
+        (*(*dest + 1))->reconf(*dest + 1, 0);
+    }
+
+    return 0;
+
+ERR:
+    switch (status) {
+        case    EMEMORYALLOC:
+            if (*(*dest) != NULL)
+                (*(*dest))->release(*(*dest));
+            if (*(*dest + 1) != NULL)
+                (*(*dest))->release(*(*dest + 1));
+            *(*dest) = *(*dest + 1) = NULL;
+            *dest = NULL;
+            break;
+    }
+
+    return status;
+}
+
+static
+int c_partition(STRING* self, char* const str, char*** dest)
+{
+    size_t      idx     = 0,
+                len     = 0;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (str == NULL)
+        return (status = EARGISNULPTR);
+    if ((len = strlen(str)) > self->size(self))
+        return (status = EOUTOFRANGE);
+    if (self->index(self, str, 0, &idx) < 0)
+        return (status = ESTRNOTFOUND);
+
+    if ((*dest = (char**)
+                malloc(sizeof(char*) * 2)) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        return (status = EMEMORYALLOC);
+    }
+
+    if ((*(*dest) = (char*)
+                malloc(sizeof(char) * (idx + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memcpy(*(*dest), self->c_str(self), idx);
+        *(*((*dest)) + idx) = '\0';
+    }
+
+    if ((*(*dest + 1) = (char*)
+                malloc(sizeof(char) *
+                    (self->size(self) - len + idx + 1))) == NULL) {
+#ifdef  LIBRARY_VERBOSE
+        print_error();
+/* LIBRARY_VERBOSE */
+#endif
+        status = EMEMORYALLOC; goto ERR;
+    } else {
+        memcpy(*(*dest + 1),
+                self->c_str(self) + idx + len,
+                self->size(self) - idx - len);
+        *(*((*dest + 1)) + self->size(self) - idx - len) = '\0';
+    }
+
+    return 0;
+    
+ERR:
+    switch (status) {
+        case    EMEMORYALLOC:
+            if (*(*dest) != NULL) {
+                free(*(*dest));
+                *(*dest) = NULL;
+            }
+            if (*(*dest + 1) != NULL) {
+                free(*(*dest + 1));
+                *(*dest + 1) = NULL;
+            }
+            break;
+    }
+    
+    return -1;
 }
 
 static
@@ -1537,7 +1684,7 @@ int ts_index(STRING* self, char* const str, size_t pos, size_t* idx)
     /* not found */
     *idx = 0;
 
-    return -1;
+    return (status = ESTRNOTFOUND);
 }
 
 static
@@ -1568,7 +1715,7 @@ int ts_rindex(STRING* self, char* const str, size_t pos, size_t* idx)
     /* not found */
     (*idx) = 0;
 
-    return -1;
+    return (status = ESTRNOTFOUND);
 }
 
 static
@@ -1584,6 +1731,8 @@ int mbindex(STRING* self, char* const str, size_t pos, size_t* idx)
         return (status = ESTRISEMPTY);
     if (str == NULL || idx == NULL)
         return (status = EARGISNULPTR);
+    if (!mb_is_in_range(self, pos))
+        return (status = EOUTOFRANGE);
 
     len = strlen(str);
     p = self->c_str(self);
@@ -1606,7 +1755,7 @@ int mbindex(STRING* self, char* const str, size_t pos, size_t* idx)
     /* not found */
     *idx = 0;
 
-    return -1;
+    return (status = ESTRNOTFOUND);
 }
 
 static
@@ -1623,6 +1772,8 @@ int mbrindex(STRING* self, char* const str, size_t pos, size_t* idx)
         return (status = ESTRISEMPTY);
     if (str == NULL || idx == NULL)
         return (status = EARGISNULPTR);
+    if (!mb_is_in_range(self, pos))
+        return (status = EOUTOFRANGE);
 
     len = strlen(str);
     *idx = self->mblen(self) - 1;
@@ -1649,7 +1800,7 @@ int mbrindex(STRING* self, char* const str, size_t pos, size_t* idx)
     /* not found */
     *idx = 0;
 
-    return -1;
+    return (status = ESTRNOTFOUND);
 }
 
 static
@@ -2054,6 +2205,15 @@ int is_in_range(STRING* self, size_t pos)
     return 1;
 }
 
+static
+int mb_is_in_range(STRING* self, size_t pos)
+{
+    if (self->mblen(self) < pos)
+        return 0;
+
+    return 1;
+}
+
 #ifdef  WITH_GLIB
 static
 int count_mb_witdh(STRING* self, size_t* s)
@@ -2118,6 +2278,40 @@ int count_mb_witdh(STRING* self, size_t* s)
 #endif
 
 static
+size_t mbstrlen(char* const str)
+{
+    int     ch      = 0;
+
+    size_t  c       = 0;
+
+    char*   p       = NULL;
+
+    if (str == NULL) {
+        status = EARGISNULPTR; goto ERR;
+    } else {
+        p = str;
+    }
+    setlocale(LC_CTYPE, T_STRING_LOCALE_VALUE);
+    while (*p != '\0') {
+        if ((ch = mblen(p, MB_CUR_MAX)) < 0) {
+#ifdef  LIBRARY_VERBOSE
+            print_error();
+/* LIBRARY_VERBOSE */
+#endif
+            status = EINVALIDCHAR; goto ERR;
+        } else {
+            p += ch;
+            c++;
+        }
+    }
+
+    return c;
+
+ERR:
+    return 0;
+}
+
+static
 char* mbstrtok(char* str, char* delim)
 {
     static  char*   ptr = NULL;
@@ -2151,7 +2345,7 @@ int allocate_memory(STRING** self, size_t size)
         print_error();
 /* LIBRARY_VERBOSE */
 #endif
-        return -1;
+        return (status = EMEMORYALLOC);
     } else {
         memset((*self)->string, '\0', (*self)->alloc_size);
     }
@@ -2177,7 +2371,7 @@ int reallocate_memory(STRING** self, size_t size)
         print_error();
 /* LIBRARY_VERBOSE */
 #endif
-        return -1;
+        return (status = EMEMORYALLOC);
     } else {
         memset((*self)->string + old_alloc_size,
                 '\0', (*self)->alloc_size - old_alloc_size);
