@@ -17,7 +17,7 @@ int s->index(STRING* self, char* const str, size_t pos, size_t* idx);
 実文字を扱う場合は`mbindex()`を参照せよ。
 
 指定位置`pos`として有効な値は、現在の領域内に限られる。
-従って、`self->size(self) + strlen(str)`を超えてはならない。
+従って、`self->size(self)`を超えてはならない。
 
 ## 戻り値
 
@@ -37,6 +37,10 @@ int s->index(STRING* self, char* const str, size_t pos, size_t* idx);
 ### EOUTOFRANGE
 
 `pos` が無効な指定位置 (領域外) であった。
+
+### ESTRNOTFOUND
+
+`self`が管理する文字列内に部分文字列`str`が存在しなかった。
 
 ## 例
 

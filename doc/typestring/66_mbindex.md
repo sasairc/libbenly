@@ -37,6 +37,10 @@ int s->mbindex(STRING* self, char* const str, size_t pos, size_t* idx);
 
 不正なマルチバイト列を検出した。
 
+### ESTRNOTFOUND
+
+`self`が管理する文字列内に部分文字列`str`が存在しなかった。
+
 ## 例
 
 ```c
