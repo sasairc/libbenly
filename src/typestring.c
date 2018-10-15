@@ -18,6 +18,8 @@
 #include <ctype.h>
 #include <locale.h>
 #include <string.h>
+#include <unistd.h>
+#include <crypt.h>
 #include <errno.h>
 
 #ifdef  WITH_GLIB
@@ -92,6 +94,8 @@ static int mbrindex(STRING* self, char* const str, size_t pos, size_t* idx);
 static int slice(STRING** self, char* const str);
 static int delete_prefix(STRING** self, char* const str);
 static int delete_suffix(STRING** self, char* const str);
+static int sub(STRING** self, char* const src, char* const dest);
+static int gsub(STRING** self, char* const src, char* const dest);
 static int to_i(STRING* self, int base);
 static long to_l(STRING* self, int base);
 static float to_f(STRING* self);
@@ -104,6 +108,8 @@ static int each_char(STRING* self, void (*fn)(char*));
 static int each_codepoint(STRING* self, void (*fn)(uint32_t));
 /* WITH_GLIB */
 #endif
+static char* ts_crypt(STRING* self, char* const salt);
+static int ts_crypt2(STRING* self, char* const salt, char** dest);
 static void clear(STRING** self);
 static void release(STRING* self);
 
@@ -148,6 +154,8 @@ STRING* new_string(char* const str)
         string->insert          = insert;
         string->erase           = erase;
         string->replace         = replace;
+        string->sub             = sub;
+        string->gsub            = gsub;
         string->at              = at;
         string->empty           = empty;
         string->front           = front;
@@ -203,6 +211,8 @@ STRING* new_string(char* const str)
         string->each_codepoint  = NULL;
 /* WITH_GLIB */
 #endif
+        string->crypt           = ts_crypt;
+        string->crypt2          = ts_crypt2;
         string->clear           = clear;
         string->release         = release;
 
@@ -1946,6 +1956,46 @@ int delete_suffix(STRING** self, char* const str)
 }
 
 static
+int sub(STRING** self, char* const src, char* const dest)
+{
+    size_t  pos = 0,
+            len = 0;
+
+    char*   p   = NULL;
+
+    if (src == NULL || dest == NULL)
+        return (status = EARGISNULPTR);
+    if ((*self)->empty(*self) ||
+            !(len = strlen(src)))
+        return (status = ESTRISEMPTY);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0' && memcmp(p, src, len)) {
+        p++;
+        pos++;
+    }
+    if (*p != '\0')
+        (*self)->replace(self, pos, len, dest);
+    else
+        return (status = ESTRNOTFOUND);
+
+    return 0;
+}
+
+static
+int gsub(STRING** self, char* const src, char* const dest)
+{
+    int     cnt = 0;
+
+    while ((*self)->sub(self, src, dest) == 0)
+        cnt++;
+    if ((WSTRISEMPTY(status) || WSTRNOTFOUND(status)) && cnt)
+        status = 0; /* success */
+
+    return status;
+}
+
+static
 int to_i(STRING* self, int base)
 {
     if (self->empty(self))
@@ -2163,6 +2213,37 @@ int each_codepoint(STRING* self, void (*fn)(uint32_t))
 }
 /* WITH_GLIB */
 #endif
+
+static
+char* ts_crypt(STRING* self, char* const salt)
+{
+    if (self->empty(self)) {
+        status = ESTRISEMPTY;
+
+        return NULL;
+    }
+    if (salt == NULL) {
+        status = EARGISNULPTR;
+
+        return NULL;
+    }
+
+    return crypt(self->c_str(self), salt);
+}
+
+static
+int ts_crypt2(STRING* self, char* const salt, char** dest)
+{
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (salt == NULL)
+        return (status = EARGISNULPTR);
+
+    if ((*dest = crypt(self->c_str(self), salt)) == NULL)
+        return errno;
+
+    return 0;
+}
 
 static
 void clear(STRING** self)

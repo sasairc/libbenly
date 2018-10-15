@@ -527,6 +527,8 @@ typedef struct STRING {
     int     (*slice)(STRING** self, char* const str);
     int     (*delete_prefix)(STRING** self, char* const str);
     int     (*delete_suffix)(STRING** self, char* const str);
+    int     (*sub)(STRING** self, char* const src, char* const dest);
+    int     (*gsub)(STRING** self, char* const src, char* const dest);
     int     (*to_i)(STRING* self, int base);
     long    (*to_l)(STRING* self, int base);
     float   (*to_f)(STRING* self);
@@ -536,6 +538,8 @@ typedef struct STRING {
     int     (*each_byte)(STRING* self, void (*fn)(char));
     int     (*each_char)(STRING* self, void (*fn)(char*));
     int     (*each_codepoint)(STRING* self, void (*fn)(uint32_t));
+    char*   (*crypt)(STRING* self, char* const salt);
+    int     (*crypt2)(STRING* self, char* const salt, char** dest);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 
@@ -544,12 +548,6 @@ typedef struct STRING {
      */
     size_t  (*mbstrlen)(char* const str);
 } STRING;
-
-extern STRING* new_string(char* const str);
-extern int fgetline(FILE* fp, STRING** s);
-extern int fputline(FILE* fp, STRING* s);
-extern void release_char_arr(STRING* self, size_t n, char** arr);
-
 
 STRING* new_string(char* const str);
 int fgetline(FILE* fp, STRING** s);

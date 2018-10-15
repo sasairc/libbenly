@@ -180,10 +180,10 @@ ifeq ($(CMDLINE), 0)
 	@echo "  CC      typestring.o"
 	@$(CC) $(CFLAGS) -c $< -o typestring.o $(DEFCFLAGS)
 	@echo "  CCLD    $@"
-	@$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS)
+	@$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS) -lcrypt
 else
 	$(CC) $(CFLAGS) -c $< -o typestring.o $(DEFCFLAGS)
-	$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS)
+	$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS) -lcrypt
 endif
 
 libbenly_uri.$(SUFFIX): uri.c uri.h
