@@ -1,18 +1,19 @@
 ## 名前
+`src`に対して空文字 "" を指定した場合は、何も行わない。
 
-sub - 最初の任意文字列を置き換える
+gsub - 全ての任意文字列を置き換える
 
 ## 書式
 
 ```c
 #include <benly/typestring.h>
 
-int s->sub(STRING** self, char* const src, char* const dest);
+int s->gsub(STRING** self, char* const src, char* const dest);
 ```
 
 ## 説明
 
-メンバ関数`sub()`は、`self`が管理する文字列から最初の任意文字列`src`を捜査し、マッチした部分を任意文字列`dest`で置き換える。
+メンバ関数`gsub()`は、`self`が管理する文字列から任意文字列`src`を捜査し、マッチした全ての部分を任意文字列`dest`で置き換える。
 `src`に対して空文字 "" を指定した場合は何も行わない。
 
 ## 戻り値
@@ -45,12 +46,11 @@ int s->sub(STRING** self, char* const src, char* const dest);
 
 int main(void)
 {
-    STRING* s   = new_string("ぼくドラえもんです");
+    STRING* s   = new_string("い・け・な・いルージュマジック");
 
-    s->sub(&s, "えもん", "右衛門");
+    s->gsub(&s, "・", "");
     fprintf(stdout, "%s\n",
             s->c_str(s));
-    s->release(s);
 
     return 0;
 }
@@ -59,5 +59,5 @@ int main(void)
 ### 出力
 
 ```
-ぼくドラ右衛門です
+いけないルージュマジック
 ```
