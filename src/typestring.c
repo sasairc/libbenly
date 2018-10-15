@@ -18,6 +18,8 @@
 #include <ctype.h>
 #include <locale.h>
 #include <string.h>
+#include <unistd.h>
+#include <crypt.h>
 #include <errno.h>
 
 #ifdef  WITH_GLIB
@@ -106,6 +108,8 @@ static int each_char(STRING* self, void (*fn)(char*));
 static int each_codepoint(STRING* self, void (*fn)(uint32_t));
 /* WITH_GLIB */
 #endif
+static char* ts_crypt(STRING* self, char* const salt);
+static int ts_crypt2(STRING* self, char* const salt, char** dest);
 static void clear(STRING** self);
 static void release(STRING* self);
 
@@ -207,6 +211,8 @@ STRING* new_string(char* const str)
         string->each_codepoint  = NULL;
 /* WITH_GLIB */
 #endif
+        string->crypt           = ts_crypt;
+        string->crypt2          = ts_crypt2;
         string->clear           = clear;
         string->release         = release;
 
@@ -2207,6 +2213,37 @@ int each_codepoint(STRING* self, void (*fn)(uint32_t))
 }
 /* WITH_GLIB */
 #endif
+
+static
+char* ts_crypt(STRING* self, char* const salt)
+{
+    if (self->empty(self)) {
+        status = ESTRISEMPTY;
+
+        return NULL;
+    }
+    if (salt == NULL) {
+        status = EARGISNULPTR;
+
+        return NULL;
+    }
+
+    return crypt(self->c_str(self), salt);
+}
+
+static
+int ts_crypt2(STRING* self, char* const salt, char** dest)
+{
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+    if (salt == NULL)
+        return (status = EARGISNULPTR);
+
+    if ((*dest = crypt(self->c_str(self), salt)) == NULL)
+        return errno;
+
+    return 0;
+}
 
 static
 void clear(STRING** self)

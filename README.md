@@ -538,6 +538,8 @@ typedef struct STRING {
     int     (*each_byte)(STRING* self, void (*fn)(char));
     int     (*each_char)(STRING* self, void (*fn)(char*));
     int     (*each_codepoint)(STRING* self, void (*fn)(uint32_t));
+    char*   (*crypt)(STRING* self, char* const salt);
+    int     (*crypt2)(STRING* self, char* const salt, char** dest);
     void    (*clear)(STRING** self);
     void    (*release)(STRING* self);
 
