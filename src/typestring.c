@@ -92,6 +92,8 @@ static int mbrindex(STRING* self, char* const str, size_t pos, size_t* idx);
 static int slice(STRING** self, char* const str);
 static int delete_prefix(STRING** self, char* const str);
 static int delete_suffix(STRING** self, char* const str);
+static int sub(STRING** self, char* const src, char* const dest);
+static int gsub(STRING** self, char* const src, char* const dest);
 static int to_i(STRING* self, int base);
 static long to_l(STRING* self, int base);
 static float to_f(STRING* self);
@@ -148,6 +150,8 @@ STRING* new_string(char* const str)
         string->insert          = insert;
         string->erase           = erase;
         string->replace         = replace;
+        string->sub             = sub;
+        string->gsub            = gsub;
         string->at              = at;
         string->empty           = empty;
         string->front           = front;
@@ -1943,6 +1947,46 @@ int delete_suffix(STRING** self, char* const str)
     }
 
     return 1;
+}
+
+static
+int sub(STRING** self, char* const src, char* const dest)
+{
+    size_t  pos = 0,
+            len = 0;
+
+    char*   p   = NULL;
+
+    if (src == NULL || dest == NULL)
+        return (status = EARGISNULPTR);
+    if ((*self)->empty(*self) ||
+            !(len = strlen(src)))
+        return (status = ESTRISEMPTY);
+
+    p = (*self)->c_str(*self);
+    while (*p != '\0' && memcmp(p, src, len)) {
+        p++;
+        pos++;
+    }
+    if (*p != '\0')
+        (*self)->replace(self, pos, len, dest);
+    else
+        return (status = ESTRNOTFOUND);
+
+    return 0;
+}
+
+static
+int gsub(STRING** self, char* const src, char* const dest)
+{
+    int     cnt = 0;
+
+    while ((*self)->sub(self, src, dest) == 0)
+        cnt++;
+    if ((WSTRISEMPTY(status) || WSTRNOTFOUND(status)) && cnt)
+        status = 0; /* success */
+
+    return status;
 }
 
 static
