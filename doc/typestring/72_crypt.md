@@ -12,6 +12,8 @@ char* s->crypt(STRING* self, char* const salt);
 int s->crypt2(STRING* self, char* const salt, char** dest);
 ```
 
+## 説明
+
 メンバ関数`crypt()`および`crypt2()`は、`self`が管理する文字列を鍵として扱い、任意のソルト要素`salt`を用いて暗号化を行う。
 `crypt()`の詳細な実装については[crypt (3)](https://linuxjm.osdn.jp/html/LDP_man-pages/man3/crypt.3.html)を参照されたい。
 
