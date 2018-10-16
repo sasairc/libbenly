@@ -19,8 +19,12 @@
 #include <locale.h>
 #include <string.h>
 #include <unistd.h>
-#include <crypt.h>
 #include <errno.h>
+
+#ifndef __APPLE__
+#include <crypt.h>
+/* __APPLE__ */
+#endif
 
 #ifdef  WITH_GLIB
 #include <glib.h>

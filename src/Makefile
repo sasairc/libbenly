@@ -36,7 +36,8 @@ DEFCFLAGS    = -fPIC                     \
                -DLOCALE=\"$(LOCALE)\"
 ifeq ($(shell uname), Linux)
 DEFLDFLAGS   = -shared                   \
-               -Wl,-soname=$@.$(VERSION)
+               -Wl,-soname=$@.$(VERSION) \
+	       -lcrypt
 # for Linux
 endif
 ifeq ($(shell uname), Darwin)
@@ -180,10 +181,10 @@ ifeq ($(CMDLINE), 0)
 	@echo "  CC      typestring.o"
 	@$(CC) $(CFLAGS) -c $< -o typestring.o $(DEFCFLAGS)
 	@echo "  CCLD    $@"
-	@$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS) -lcrypt
+	@$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS)
 else
 	$(CC) $(CFLAGS) -c $< -o typestring.o $(DEFCFLAGS)
-	$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS) -lcrypt
+	$(CC) $(LDFLAGS) typestring.o -o $@ $(DEFLDFLAGS)
 endif
 
 libbenly_uri.$(SUFFIX): uri.c uri.h
