@@ -479,6 +479,7 @@ typedef struct STRING {
     int     (*shrink_to_fit)(STRING** self);
     int     (*resize)(STRING** self, size_t n, char const c);
     int     (*assign)(STRING** self, char* const str);
+    int     (*prepend)(STRING** self, char* const str);
     int     (*append)(STRING** self, char* const str);
     int     (*push_back)(STRING** self, char const c);
     void    (*pop_back)(STRING** self);
@@ -534,6 +535,7 @@ typedef struct STRING {
     float   (*to_f)(STRING* self);
     int     (*reverse)(STRING** self);
     int     (*ascii_only)(STRING* self);
+    int     (*digit_only)(STRING* self);
     int     (*each_line)(STRING* self, char* const delim, void (*fn)(STRING*));
     int     (*each_byte)(STRING* self, void (*fn)(char));
     int     (*each_char)(STRING* self, void (*fn)(char*));
