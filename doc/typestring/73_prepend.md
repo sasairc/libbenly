@@ -33,7 +33,7 @@ int s->prepend(STRING** self, char* const str);
 
 ## 例
 
-```
+```c
 #include <benly/typestring.h>
 #include <stdio.h>
 
