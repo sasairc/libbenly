@@ -50,6 +50,7 @@ static int resize(STRING** self, size_t n, char const c);
 static int reserve(STRING** self, size_t s);
 static int shrink_to_fit(STRING** self);
 static int assign(STRING** self, char* const str);
+static int prepend(STRING** self, char* const str);
 static int append(STRING** self, char* const str);
 static int insert(STRING** self, size_t pos, char* const str);
 static int erase(STRING** self, size_t pos, size_t n);
@@ -105,6 +106,7 @@ static long to_l(STRING* self, int base);
 static float to_f(STRING* self);
 static int reverse(STRING** self);
 static int ascii_only(STRING* self);
+static int digit_only(STRING* self);
 static int each_line(STRING* self, char* const delim, void (*fn)(STRING*));
 static int each_byte(STRING* self, void (*fn)(char));
 static int each_char(STRING* self, void (*fn)(char*));
@@ -151,6 +153,7 @@ STRING* new_string(char* const str)
         string->capacity        = capacity;
         string->count           = count;
         string->assign          = assign;
+        string->prepend         = prepend;
         string->append          = append;
         string->push_back       = push_back;
         string->pop_back        = pop_back;
@@ -206,6 +209,7 @@ STRING* new_string(char* const str)
         string->to_f            = to_f;
         string->reverse         = reverse;
         string->ascii_only      = ascii_only;
+        string->digit_only      = digit_only;
         string->each_line       = each_line;
         string->each_byte       = each_byte;
         string->each_char       = each_char;
@@ -544,6 +548,18 @@ ERR:
     }
 
     return status;
+}
+
+static
+int prepend(STRING** self, char* const str)
+{
+    if (str == NULL)
+        return (status = EARGISNULPTR);
+
+    if (reallocate_memory(self, strlen(str) + 1) < 0)
+        return (status = EMEMORYALLOC);
+
+    return (*self)->insert(self, 0, str);
 }
 
 static
@@ -2098,6 +2114,24 @@ int ascii_only(STRING* self)
     p = self->c_str(self);
     while (*p != '\0') {
         if (!isascii(*p))
+            return 0;
+        p++;
+    }
+
+    return 1;
+}
+
+static
+int digit_only(STRING* self)
+{
+    char*   p   = NULL;
+
+    if (self->empty(self))
+        return (status = ESTRISEMPTY);
+
+    p = self->c_str(self);
+    while (*p != '\0') {
+        if (!isdigit(*p))
             return 0;
         p++;
     }
