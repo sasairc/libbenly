@@ -1,27 +1,29 @@
 ## 名前
 
-front - STRING の先頭要素を取得する
+front - STRING の先頭要素へのポインタを取得する
 
 ## 書式
 
 ```c
 #include <benly/typestring.h>
 
-char s->front(STRING* self);
+char* s->front(STRING* self);
 ```
 
 ## 説明
 
-メンバ関数`front()`は、`self`が管理する文字列の先頭要素を取得する。
-返却する値は要素の複製であり、要素への参照でない。
+メンバ関数`front()`は、`self`が管理する文字列の先頭要素へのポインタを返却する。
 
 ## 戻り値
 
-先頭要素を返す。文字列が空の場合の戻り値は、必然的にNULL文字 ('\0') である。
+成功した場合は先頭要素へのポインタを返す。
+エラーが発生した場合は NULL を返し、`string_errno`にエラー原因を示す値を設定する。
 
 ## エラー
 
-本関数は失敗しない。
+### ESTRISEMPTY
+
+`self`が管理する文字列が存在しない、またはサイズが 0 だった。
 
 ## 例
 
@@ -31,11 +33,11 @@ char s->front(STRING* self);
 
 int main(void)
 {
-    STRING* s   = new_string("hello world");
+    STRING* s   = new_string("doraemon");
 
-    fprintf(stdout, "%c\n",
-            s->front(s));
-
+    if (s->front(s) != NULL)
+        fprintf(stdout, "%c\n",
+                *s->front(s));
     s->release(s);
 
     return 0;
@@ -45,5 +47,5 @@ int main(void)
 ### 出力
 
 ```
-h
+d
 ```
