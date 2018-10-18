@@ -60,8 +60,8 @@ static void pop_back(STRING** self);
 static void swap(STRING** s1, STRING** s2);
 static int empty(STRING* self);
 static char at(STRING* self, size_t pos);
-static char front(STRING* self);
-static char back(STRING* self);
+static char* front(STRING* self);
+static char* back(STRING* self);
 static char* c_str(STRING* self);
 static int copy(STRING* self, STRING** dest);
 static size_t c_copy(STRING* self, char** dest);
@@ -167,6 +167,7 @@ STRING* new_string(char* const str)
         string->empty           = empty;
         string->front           = front;
         string->back            = back;
+        string->data            = c_str;
         string->c_str           = c_str;
         string->substr          = substr;
         string->c_substr        = c_substr;
@@ -734,15 +735,27 @@ char at(STRING* self, size_t pos)
 }
 
 static
-char front(STRING* self)
+char* front(STRING* self)
 {
-    return *(self->c_str(self));
+    if (self->empty(self)) {
+        status = ESTRISEMPTY;
+
+        return NULL;
+    }
+
+    return self->c_str(self);
 }
 
 static
-char back(STRING* self)
+char* back(STRING* self)
 {
-    return *(self->c_str(self) + self->size(self) - 1);
+    if (self->empty(self)) {
+        status = ESTRISEMPTY;
+
+        return NULL;
+    }
+
+    return self->c_str(self) + self->size(self) - 1;
 }
 
 static
