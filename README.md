@@ -489,8 +489,9 @@ typedef struct STRING {
     int     (*replace)(STRING** self, size_t pos, size_t n, char* const str);
     int     (*empty)(STRING* self);
     char    (*at)(STRING* self, size_t pos);
-    char    (*front)(STRING* self);
-    char    (*back)(STRING* self);
+    char*   (*front)(STRING* self);
+    char*   (*back)(STRING* self);
+    char*   (*data)(STRING* self);
     char*   (*c_str)(STRING* self);
     int     (*copy)(STRING* self, STRING** dest);
     size_t  (*c_copy)(STRING* self, char** dest);
